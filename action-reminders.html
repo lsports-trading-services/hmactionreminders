@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Action Reminders</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c0d0f'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%236e56cf' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='3.5' fill='%236e56cf'/%3E%3Cline x1='16' y1='3.5' x2='16' y2='8' stroke='%236e56cf' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='16' y1='24' x2='16' y2='28.5' stroke='%236e56cf' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='3.5' y1='16' x2='8' y2='16' stroke='%236e56cf' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='24' y1='16' x2='28.5' y2='16' stroke='%236e56cf' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist+Mono:wght@300;400;500;600&family=Geist:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0d0f;--sf:#13141a;--sf2:#1a1c24;--sf3:#212430;
+  --bd:rgba(255,255,255,.07);--bd2:rgba(255,255,255,.13);
+  --tx:rgba(255,255,255,.88);--tx2:rgba(255,255,255,.52);--tx3:rgba(255,255,255,.25);
+  --crit:#ff4545;--hi:#ff9500;--med:#f5c518;--lo:#5ac8fa;--ok:#34c759;--ac:#6e56cf;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:"Geist",sans-serif;font-size:14px;min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 60% 40% at 70% 10%,rgba(110,86,207,.055) 0%,transparent 70%),
+             radial-gradient(ellipse 40% 30% at 10% 80%,rgba(90,200,250,.035) 0%,transparent 60%)}
+.shell{display:flex;min-height:100vh;position:relative;z-index:1}
+
+/* Sidebar */
+.sb{width:220px;flex-shrink:0;background:var(--sf);border-right:1px solid var(--bd);
+  display:flex;flex-direction:column;padding:24px 0;position:fixed;top:0;left:0;bottom:0;overflow-y:auto}
+.mn{margin-left:220px;flex:1;padding:36px 44px 80px;max-width:960px}
+.logo{padding:0 16px 20px;border-bottom:1px solid var(--bd);margin-bottom:12px;display:flex;align-items:center;gap:9px}
+.logo-mark{font-family:"Instrument Serif",serif;font-size:15px;color:var(--tx);line-height:1.1}
+.logo-sub{font-size:8px;color:var(--tx3);letter-spacing:2px;font-family:"Geist Mono",monospace;margin-top:1px}
+.ns{font-size:8px;color:var(--tx3);letter-spacing:2px;font-family:"Geist Mono",monospace;padding:8px 16px 4px;margin-top:4px}
+.ni{display:flex;align-items:center;gap:8px;padding:8px 16px;cursor:pointer;color:var(--tx2);
+  font-size:13px;border-left:2px solid transparent;transition:all .15s;user-select:none}
+.ni:hover{color:var(--tx);background:rgba(255,255,255,.03)}
+.ni.on{color:var(--tx);border-left-color:var(--ac);background:rgba(110,86,207,.08)}
+.ni-icon{font-size:13px;width:16px;text-align:center;flex-shrink:0}
+.ni-lbl{flex:1}
+.nb{background:var(--crit);color:#fff;font-size:8.5px;font-weight:700;padding:2px 5px;border-radius:7px;font-family:"Geist Mono",monospace}
+.nb.ok{background:var(--ok)}
+.sbf{margin-top:auto;padding:12px 16px;border-top:1px solid var(--bd)}
+.sdr{display:flex;align-items:center;gap:6px;font-size:9.5px;color:var(--tx3);font-family:"Geist Mono",monospace}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--ok);transition:background .3s;flex-shrink:0}
+.sdot.dirty{background:var(--hi);animation:blink 1.2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* Views */
+.view{display:none;animation:fu .22s ease}
+.view.on{display:block}
+@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ph{margin-bottom:24px}
+.ph-t{font-family:"Instrument Serif",serif;font-size:28px;letter-spacing:-.5px;line-height:1.1;margin-bottom:4px}
+.ph-s{font-size:12px;color:var(--tx2)}
+
+/* Stats strip */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:20px}
+.sc{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:14px 15px;transition:border-color .2s}
+.sc:hover{border-color:var(--bd2)}
+.sc-l{font-size:8px;color:var(--tx3);letter-spacing:1.5px;font-family:"Geist Mono",monospace;margin-bottom:7px}
+.sc-v{font-size:24px;font-weight:600;font-family:"Geist Mono",monospace;line-height:1}
+.sc-s{font-size:10px;color:var(--tx3);margin-top:3px}
+
+/* Filter bar */
+.fb{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.fc{padding:4px 10px;border-radius:18px;font-size:9.5px;font-family:"Geist Mono",monospace;cursor:pointer;
+  border:1px solid var(--bd);color:var(--tx2);background:transparent;transition:all .15s;user-select:none;
+  display:flex;align-items:center;gap:4px}
+.fc:hover{border-color:var(--bd2);color:var(--tx)}
+.fc.on{border-color:var(--ac);background:rgba(110,86,207,.12);color:rgba(110,86,207,.9)}
+.fcd{width:5px;height:5px;border-radius:50%}
+.fcc{opacity:.6}
+.fso{background:var(--sf);border:1px solid var(--bd);color:var(--tx2);border-radius:6px;
+  padding:5px 7px;font-size:9.5px;font-family:"Geist Mono",monospace;cursor:pointer}
+.fso:focus{outline:none}
+
+/* Priority pills */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:8.5px;font-weight:700;letter-spacing:.8px;
+  padding:2px 7px;border-radius:3px;font-family:"Geist Mono",monospace;flex-shrink:0}
+.pd{width:4px;height:4px;border-radius:50%}
+.pill.critical{background:rgba(255,69,69,.12);color:var(--crit)}
+.pill.high{background:rgba(255,149,0,.12);color:var(--hi)}
+.pill.medium{background:rgba(245,197,24,.12);color:var(--med)}
+.pill.low{background:rgba(90,200,250,.12);color:var(--lo)}
+
+/* Cards */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;margin-bottom:7px;
+  overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--bd2)}
+.card.xp{border-color:rgba(110,86,207,.28);box-shadow:0 0 0 1px rgba(110,86,207,.07)}
+.ch{padding:13px 16px;cursor:pointer;display:flex;align-items:center;gap:11px}
+.cpb{width:3px;align-self:stretch;border-radius:2px;flex-shrink:0}
+.cm{flex:1;min-width:0}
+.ct{font-size:13.5px;font-weight:500;color:var(--tx);margin-bottom:6px;line-height:1.35}
+
+/* Metadata row — clean label+value */
+.cmt{display:flex;align-items:center;gap:0;flex-wrap:wrap;row-gap:3px}
+.mitem{display:inline-flex;align-items:baseline;gap:4px;margin-right:12px}
+.mlabel{font-size:8px;font-weight:600;letter-spacing:1.2px;color:var(--tx3);font-family:"Geist Mono",monospace}
+.mval{font-size:11.5px;color:var(--tx2);font-family:"Geist Mono",monospace;white-space:nowrap}
+.mitem-meet .mval-meet{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:bottom}
+.msep{width:1px;height:10px;background:var(--bd2);margin-right:12px;flex-shrink:0;align-self:center}
+
+/* Card right — actions */
+.cright{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px}
+.claude-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;
+  font-size:10px;font-family:"Geist Mono",monospace;font-weight:600;letter-spacing:.3px;cursor:pointer;
+  border:1px solid rgba(110,86,207,.35);background:rgba(110,86,207,.1);color:rgba(110,86,207,.9);
+  text-decoration:none;transition:all .18s;white-space:nowrap}
+.claude-btn:hover{background:rgba(110,86,207,.22);border-color:rgba(110,86,207,.55);color:rgba(110,86,207,1)}
+.qcbtn{background:transparent;border:1px solid rgba(52,199,89,.25);color:rgba(52,199,89,.5);
+  border-radius:5px;padding:5px 8px;cursor:pointer;font-size:11px;transition:all .18s;line-height:1;flex-shrink:0}
+.qcbtn:hover{background:rgba(52,199,89,.12);border-color:rgba(52,199,89,.5);color:var(--ok)}
+.schbtn{background:transparent;border:1px solid var(--bd);color:var(--tx3);border-radius:5px;
+  padding:4px 8px;cursor:pointer;font-size:9px;font-family:"Geist Mono",monospace;transition:all .15s}
+.schbtn:hover{border-color:var(--bd2);color:var(--tx2)}
+.chv{color:var(--tx3);font-size:9px;transition:transform .2s;width:13px;text-align:center}
+.chv.xp{transform:rotate(180deg)}
+
+/* Card body */
+.cbody{display:none;padding:0 16px 16px;border-top:1px solid var(--bd)}
+.cbody.xp{display:block}
+.body-top{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.body-top > *:only-child{grid-column:1/-1}
+.cq{background:rgba(255,255,255,.03);border-left:2px solid var(--ac);border-radius:0 7px 7px 0;padding:10px 13px}
+.ql{font-size:8px;color:var(--tx3);letter-spacing:1.2px;font-family:"Geist Mono",monospace;margin-bottom:5px}
+.qt{font-size:12px;color:var(--tx2);line-height:1.6;font-style:italic}
+.body-desc{}
+.sl{font-size:8px;color:var(--tx3);letter-spacing:1.2px;font-family:"Geist Mono",monospace;margin-bottom:6px;margin-top:14px}
+.desc{font-size:12px;color:var(--tx2);line-height:1.7}
+.dep-row{display:flex;align-items:baseline;gap:8px;margin:10px 0;padding:8px 12px;
+  background:rgba(245,197,24,.06);border:1px solid rgba(245,197,24,.15);border-radius:6px}
+.dep-label{font-size:8px;font-weight:700;letter-spacing:1.2px;color:rgba(245,197,24,.6);font-family:"Geist Mono",monospace;white-space:nowrap}
+.dep-val{font-size:12px;color:rgba(245,197,24,.8)}
+.steps{margin-top:2px}
+.step{display:flex;gap:8px;margin-bottom:6px;align-items:flex-start}
+.snum{flex-shrink:0;width:18px;height:18px;border-radius:50%;background:rgba(110,86,207,.14);
+  border:1px solid rgba(110,86,207,.28);display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-weight:700;color:rgba(110,86,207,.9);font-family:"Geist Mono",monospace}
+.stxt{font-size:12px;color:var(--tx2);line-height:1.6;padding-top:1px}
+
+/* Claude CTA */
+.claude-cta{display:flex;align-items:center;gap:12px;margin:14px 0;padding:12px 14px;
+  background:linear-gradient(135deg,rgba(110,86,207,.1) 0%,rgba(110,86,207,.05) 100%);
+  border:1px solid rgba(110,86,207,.25);border-radius:9px}
+.claude-cta-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;
+  font-size:11px;font-family:"Geist Mono",monospace;font-weight:600;cursor:pointer;white-space:nowrap;
+  border:1px solid rgba(110,86,207,.5);background:rgba(110,86,207,.2);color:rgba(110,86,207,1);
+  text-decoration:none;transition:all .18s;flex-shrink:0}
+.claude-cta-btn:hover{background:rgba(110,86,207,.32);border-color:rgba(110,86,207,.7)}
+.claude-cta-hint{font-size:10.5px;color:var(--tx3);line-height:1.4}
+
+/* Edit panel */
+.ep{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:12px 13px;margin-top:12px}
+.epg{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.ef{}
+.el{font-size:8px;color:var(--tx3);letter-spacing:1.2px;font-family:"Geist Mono",monospace;margin-bottom:3px}
+.ei{background:var(--sf3);border:1px solid var(--bd);color:var(--tx);border-radius:5px;
+  padding:6px 8px;font-size:11.5px;font-family:"Geist Mono",monospace;width:100%;transition:border-color .15s}
+.ei:focus{outline:none;border-color:rgba(110,86,207,.4)}
+.ei[type=date]{color-scheme:dark;cursor:pointer}
+.ei[type=date]::-webkit-calendar-picker-indicator{filter:invert(.4);cursor:pointer}
+.esel{background:var(--sf3);border:1px solid var(--bd);color:var(--tx);border-radius:5px;
+  padding:6px 8px;font-size:11.5px;font-family:"Geist Mono",monospace;width:100%;cursor:pointer;-webkit-appearance:none}
+.esel:focus{outline:none;border-color:rgba(110,86,207,.4)}
+.epf{display:flex;align-items:center;gap:7px;margin-top:9px;padding-top:9px;border-top:1px solid var(--bd)}
+.eph{font-size:9.5px;color:var(--tx3);font-family:"Geist Mono",monospace;flex:1}
+.esb{padding:6px 12px;border-radius:5px;cursor:pointer;font-size:9.5px;font-family:"Geist Mono",monospace;
+  border:1px solid rgba(110,86,207,.35);background:rgba(110,86,207,.1);color:rgba(110,86,207,.9);transition:all .15s}
+.esb:hover{background:rgba(110,86,207,.18)}
+.esb.saved{border-color:rgba(52,199,89,.3);background:rgba(52,199,89,.07);color:var(--ok)}
+
+/* Complete row */
+.crow{display:flex;align-items:center;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd);flex-wrap:wrap}
+.tl{font-size:9.5px;color:var(--tx2);font-family:"Geist Mono",monospace;white-space:nowrap}
+.ti{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);border-radius:5px;
+  padding:5px 8px;font-size:11px;font-family:"Geist Mono",monospace;width:72px;flex-shrink:0}
+.ti:focus{outline:none;border-color:var(--bd2)}
+.sp{flex:1}
+.cbtn{padding:7px 14px;border-radius:6px;cursor:pointer;font-size:10px;font-family:"Geist Mono",monospace;
+  transition:all .15s;border:1px solid rgba(52,199,89,.25);background:rgba(52,199,89,.07);color:var(--ok);flex-shrink:0}
+.cbtn:hover{background:rgba(52,199,89,.14)}
+.calbtn{padding:7px 11px;border-radius:6px;cursor:pointer;font-size:10px;font-family:"Geist Mono",monospace;
+  transition:all .15s;border:1px solid var(--bd);background:transparent;color:var(--tx2);flex-shrink:0}
+.calbtn:hover{border-color:rgba(110,86,207,.4);color:rgba(110,86,207,.8);background:rgba(110,86,207,.06)}
+
+/* Calendar modal */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(5px);z-index:200;display:none;align-items:center;justify-content:center}
+.ov.on{display:flex}
+.modal{background:var(--sf);border:1px solid var(--bd2);border-radius:14px;padding:24px;width:420px;max-width:95vw}
+.mt{font-family:"Instrument Serif",serif;font-size:18px;margin-bottom:3px}
+.ms{font-size:11px;color:var(--tx2);margin-bottom:14px;line-height:1.5}
+.mtask{font-size:11.5px;color:var(--tx);background:var(--sf2);border:1px solid var(--bd);border-radius:6px;padding:8px 10px;margin-bottom:12px;line-height:1.4}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.mfl{font-size:8px;color:var(--tx3);letter-spacing:1.2px;font-family:"Geist Mono",monospace;margin-bottom:3px}
+.mfi{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);border-radius:5px;padding:6px 8px;font-size:11.5px;font-family:"Geist Mono",monospace;width:100%}
+.mfi:focus{outline:none;border-color:rgba(110,86,207,.4)}
+.mfi[type=date]{color-scheme:dark}
+.mfi[type=date]::-webkit-calendar-picker-indicator{filter:invert(.4);cursor:pointer}
+.mfs{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);border-radius:5px;padding:6px 8px;font-size:11.5px;font-family:"Geist Mono",monospace;width:100%}
+.mfs:focus{outline:none}
+.mnt{margin-bottom:12px}
+.mta{background:var(--sf2);border:1px solid var(--bd);color:var(--tx);border-radius:5px;padding:6px 8px;font-size:11.5px;font-family:"Geist",sans-serif;width:100%;resize:vertical;min-height:52px;line-height:1.5}
+.mta:focus{outline:none;border-color:rgba(110,86,207,.4)}
+.mac{display:flex;gap:6px;justify-content:flex-end}
+.mb{padding:7px 14px;border-radius:6px;cursor:pointer;font-size:9.5px;font-family:"Geist Mono",monospace;transition:all .15s}
+.mb-g{border:1px solid var(--bd);background:transparent;color:var(--tx2)}
+.mb-g:hover{border-color:var(--bd2);color:var(--tx)}
+.mb-p{border:1px solid rgba(110,86,207,.4);background:rgba(110,86,207,.16);color:rgba(110,86,207,.95)}
+.mb-p:hover{background:rgba(110,86,207,.26)}
+
+/* Completed view */
+.cc{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:12px 15px;margin-bottom:6px;display:flex;align-items:center;gap:10px;opacity:.72;transition:opacity .2s}
+.cc:hover{opacity:1}
+.cck{color:var(--ok);font-size:13px;flex-shrink:0}
+.cct{font-size:13px;color:var(--tx);margin-bottom:3px}
+.ccm{font-size:9.5px;color:var(--tx3);font-family:"Geist Mono",monospace}
+.ta{margin-left:auto;text-align:right;flex-shrink:0}
+.tal{font-size:8.5px;color:var(--tx3);font-family:"Geist Mono",monospace}
+.tav{font-size:12px;font-family:"Geist Mono",monospace;font-weight:600}
+.tav.over{color:var(--crit)}.tav.under{color:var(--ok)}.tav.spot{color:var(--med)}
+
+/* Analytics */
+.ag{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:16px}
+.ac{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:18px}
+.ac.w{grid-column:1/-1}
+.at{font-size:8px;color:var(--tx3);letter-spacing:1.5px;font-family:"Geist Mono",monospace;margin-bottom:12px}
+.bc{display:flex;align-items:flex-end;gap:5px;height:72px}
+.bcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.bbar{width:100%;border-radius:2px 2px 0 0;min-height:2px;transition:height .4s ease}
+.bl{font-size:7px;color:var(--tx3);font-family:"Geist Mono",monospace;text-align:center}
+.dw{display:flex;align-items:center;gap:16px}
+.dl{display:flex;flex-direction:column;gap:6px}
+.dr{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--tx2)}
+.dd{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* Meetings view */
+.mc2{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:9px}
+.mc2h{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.mc2n{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:3px}
+.mc2m{font-size:9.5px;color:var(--tx3);font-family:"Geist Mono",monospace}
+.mc2p{display:flex;gap:4px;flex-shrink:0}
+.mr{display:flex;align-items:center;gap:7px;padding:6px 9px;background:var(--sf2);border-radius:6px;margin-bottom:4px;cursor:pointer;transition:background .15s}
+.mr:hover{background:var(--sf3)}
+.mrd{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.mrt{flex:1;font-size:11.5px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:7px}
+.mrtime{font-size:9.5px;color:var(--tx3);font-family:"Geist Mono",monospace;flex-shrink:0}
+.mrb{width:55px;height:3px;background:rgba(255,255,255,.05);border-radius:2px;flex-shrink:0}
+.mrf{height:100%;border-radius:2px;background:var(--ac)}
+
+/* Empty state */
+.empty{text-align:center;padding:52px 24px;color:var(--tx3);font-family:"Geist Mono",monospace;font-size:12px;line-height:2.2}
+.empty-i{font-size:28px;display:block;margin-bottom:10px}
+
+/* Ask Claude button in crow */
+.askbtn{display:inline-flex;align-items:center;gap:4px;padding:6px 11px;border-radius:6px;
+  font-size:9.5px;font-family:"Geist Mono",monospace;font-weight:600;cursor:pointer;
+  border:1px solid rgba(110,86,207,.3);background:rgba(110,86,207,.08);color:rgba(110,86,207,.8);
+  text-decoration:none;transition:all .18s;flex-shrink:0;white-space:nowrap}
+.askbtn:hover{background:rgba(110,86,207,.18);border-color:rgba(110,86,207,.5);color:rgba(110,86,207,1)}
+
+/* Remove old claude-cta (no longer used) */
+.claude-cta{display:none}
+.mitem-meet{display:none !important}
+
+/* Header: no wrap on metadata, single tight line */
+.cmt{display:flex;align-items:center;flex-wrap:nowrap;overflow:hidden;gap:0;min-width:0}
+.mitem{display:inline-flex;align-items:baseline;gap:4px;margin-right:10px;flex-shrink:0;min-width:0}
+.mitem:last-child{flex-shrink:1;overflow:hidden}
+.mitem:last-child .mval{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px}
+.mval{font-size:11px;color:var(--tx2);font-family:"Geist Mono",monospace;white-space:nowrap}
+.mlabel{font-size:8px;font-weight:600;letter-spacing:1px;color:var(--tx3);font-family:"Geist Mono",monospace}
+.msep{width:1px;height:9px;background:rgba(255,255,255,.1);margin-right:10px;flex-shrink:0;align-self:center}
+
+/* Cal button — icon only, compact */
+.qcbtn{background:transparent;border:1px solid rgba(52,199,89,.25);color:rgba(52,199,89,.5);
+  border-radius:5px;padding:5px 8px;cursor:pointer;font-size:11px;transition:all .18s;line-height:1;flex-shrink:0}
+.qcbtn:hover{background:rgba(52,199,89,.12);border-color:rgba(52,199,89,.5);color:var(--ok)}
+.schbtn{background:transparent;border:1px solid var(--bd);color:var(--tx3);border-radius:5px;
+  padding:5px 7px;cursor:pointer;font-size:12px;transition:all .15s;line-height:1}
+.schbtn:hover{border-color:var(--bd2);color:var(--tx2)}
+
+/* Toast */
+.undobtn{background:transparent;border:1px solid var(--bd);color:var(--tx3);
+  border-radius:5px;padding:4px 7px;cursor:pointer;font-size:13px;transition:all .15s;
+  margin-left:10px;flex-shrink:0;line-height:1}
+.undobtn:hover{border-color:var(--bd2);color:var(--tx2)}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--sf2);border:1px solid var(--bd2);
+  color:var(--tx);padding:9px 15px;border-radius:8px;font-size:11px;font-family:"Geist Mono",monospace;
+  transform:translateY(50px);opacity:0;transition:all .22s;z-index:400;max-width:250px}
+.toast.on{transform:translateY(0);opacity:1}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.07);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="sb">
+  <div class="logo">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <rect width="24" height="24" rx="6" fill="#0c0d0f"/>
+      <circle cx="12" cy="12" r="7" stroke="#6e56cf" stroke-width="1.8"/>
+      <circle cx="12" cy="12" r="2.5" fill="#6e56cf"/>
+      <line x1="12" y1="2.5" x2="12" y2="6" stroke="#6e56cf" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="12" y1="18" x2="12" y2="21.5" stroke="#6e56cf" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="2.5" y1="12" x2="6" y2="12" stroke="#6e56cf" stroke-width="1.6" stroke-linecap="round"/>
+      <line x1="18" y1="12" x2="21.5" y2="12" stroke="#6e56cf" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+    <div><div class="logo-mark">Action Reminders</div><div class="logo-sub">INTELLIGENCE LAYER</div></div>
+  </div>
+  <div class="ns">WORKSPACE</div>
+  <div class="ni on" id="ni-tasks" onclick="go('tasks')"><span class="ni-icon">&#9672;</span><span class="ni-lbl">Active Tasks</span><span class="nb" id="nbadge">&#8212;</span></div>
+  <div class="ni" id="ni-completed" onclick="go('completed')"><span class="ni-icon">&#10003;</span><span class="ni-lbl">Completed</span><span class="nb ok" id="cbadge" style="display:none">0</span></div>
+  <div class="ns" style="margin-top:6px">INSIGHTS</div>
+  <div class="ni" id="ni-analytics" onclick="go('analytics')"><span class="ni-icon">&#9678;</span><span class="ni-lbl">Analytics</span></div>
+  <div class="ni" id="ni-meetings" onclick="go('meetings')"><span class="ni-icon">&#127897;</span><span class="ni-lbl">By Meeting</span></div>
+  <div class="sbf">
+    <div class="sdr"><div class="sdot" id="sdot"></div><span id="slbl">All saved</span></div>
+  </div>
+</nav>
+<main class="mn">
+  <div class="view on" id="view-tasks">
+    <div class="ph"><div class="ph-t" id="greet">Good morning.</div><div class="ph-s" id="dline"></div></div>
+    <div class="stats">
+      <div class="sc"><div class="sc-l">OUTSTANDING</div><div class="sc-v" id="s1" style="color:var(--tx)">&#8212;</div><div class="sc-s">active actions</div></div>
+      <div class="sc"><div class="sc-l">CRITICAL</div><div class="sc-v" id="s2" style="color:var(--crit)">&#8212;</div><div class="sc-s">need attention now</div></div>
+      <div class="sc"><div class="sc-l">EST. TO CLEAR</div><div class="sc-v" id="s3" style="color:var(--ac)">&#8212;</div><div class="sc-s">all tasks</div></div>
+      <div class="sc"><div class="sc-l">DONE THIS WEEK</div><div class="sc-v" id="s4" style="color:var(--ok)">&#8212;</div><div class="sc-s">completed</div></div>
+    </div>
+    <div class="fb" id="fb"></div>
+    <div id="tlist"></div>
+  </div>
+  <div class="view" id="view-completed">
+    <div class="ph"><div class="ph-t">Completed</div><div class="ph-s">Your track record with time estimation accuracy</div></div>
+    <div id="clist"></div>
+  </div>
+  <div class="view" id="view-analytics">
+    <div class="ph"><div class="ph-t">Analytics</div><div class="ph-s">How you are managing your action load</div></div>
+    <div class="stats">
+      <div class="sc"><div class="sc-l">COMPLETION RATE</div><div class="sc-v" id="a1" style="color:var(--ok)">&#8212;</div><div class="sc-s">all time</div></div>
+      <div class="sc"><div class="sc-l">AVG ACTUAL TIME</div><div class="sc-v" id="a2" style="color:var(--ac)">&#8212;</div><div class="sc-s">per task</div></div>
+      <div class="sc"><div class="sc-l">EST. ACCURACY</div><div class="sc-v" id="a3" style="color:var(--med)">&#8212;</div><div class="sc-s">est. vs actual</div></div>
+      <div class="sc"><div class="sc-l">MEETINGS</div><div class="sc-v" id="a4" style="color:var(--tx)">&#8212;</div><div class="sc-s">processed</div></div>
+    </div>
+    <div class="ag">
+      <div class="ac"><div class="at">COMPLETED BY PRIORITY</div><div class="dw"><canvas id="donut" width="90" height="90"></canvas><div class="dl" id="dleg"></div></div></div>
+      <div class="ac"><div class="at">ESTIMATION ACCURACY TREND</div><div class="bc" id="abars"></div></div>
+      <div class="ac w"><div class="at">COMPLETIONS - LAST 14 DAYS</div><div class="bc" id="vbars"></div></div>
+    </div>
+  </div>
+  <div class="view" id="view-meetings">
+    <div class="ph"><div class="ph-t">By Meeting</div><div class="ph-s">All outstanding actions grouped by source - click any row to jump to the task</div></div>
+    <div id="mlist"></div>
+  </div>
+</main>
+</div>
+<div class="ov" id="ov">
+  <div class="modal">
+    <div class="mt">&#128197; Schedule in Google Calendar</div>
+    <div class="ms">Pre-fills an event with full task details. Opens in a new tab.</div>
+    <div class="mtask" id="cal-ttl"></div>
+    <div class="mg">
+      <div><div class="mfl">DATE</div><input class="mfi" type="date" id="cal-d"></div>
+      <div><div class="mfl">START TIME</div><input class="mfi" type="time" id="cal-t" value="09:00"></div>
+      <div><div class="mfl">DURATION</div><input class="mfi" type="text" id="cal-dur" placeholder="e.g. 1h 30m"></div>
+      <div><div class="mfl">REMINDER</div>
+        <select class="mfs" id="cal-rem">
+          <option value="0">No reminder</option>
+          <option value="10" selected>10 min before</option>
+          <option value="30">30 min before</option>
+          <option value="60">1 hour before</option>
+        </select>
+      </div>
+    </div>
+    <div class="mnt"><div class="mfl" style="margin-bottom:4px">NOTES</div><textarea class="mta" id="cal-n" placeholder="Prep notes for this focus block..."></textarea></div>
+    <div class="mac"><button class="mb mb-g" onclick="closeCal()">Cancel</button><button class="mb mb-p" onclick="doCal()">Open Google Calendar</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>var SEED={"activeTasks":[{"id":"ziv-hw-001","title":"Sync with Netzer (and possibly Anders) before Wednesday HollywoodBets meeting","description":"Before the Wednesday meeting with Neil and Wade from HollywoodBets, sync with Netzer to align on what LTS capabilities exist vs are planned, and agree on messaging for client questions about current vs future features.","assignedBy":"Ziv","deadline":"By Wed 13 May","priority":"critical","meetingContext":"Harrison and Ziv agreed they need to present LTS capabilities carefully — the Defend product is still in development and they need to agree on what to demo vs what to position as upcoming. Ziv noted the Wednesday meeting involves Neil and Wade.","suggestedApproach":["Message Netzer today — set up a 30 min call before Wednesday","Agree on: what we can demo live, what we describe as 'in build', what we avoid mentioning","Also pull in Anders if the prediction markets call gives useful context on MTS capabilities"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Netzer and Anders availability","meetingTitle":"Ziv / Harrison","meetingDate":"2026-05-13","addedAt":1778692987259},{"id":"ziv-hw-002","title":"Lead discovery on Wednesday HollywoodBets call — clarify what risk management they expect from LTS","description":"On the Wednesday call with HollywoodBets (Neil and Wade), Harrison to lead with discovery questions to understand exactly what services and risk management responsibilities they expect LTS to provide, rather than pitching features.","assignedBy":"Self (agreed with Ziv)","deadline":"Wed 14 May","priority":"high","meetingContext":"HollywoodBets currently uses Radar exclusively but wants to add LSports as a secondary provider for additional content and markets, to compete with Betway. They are a large operator — 4,000+ employees. Key is understanding their specific LTS requirements before positioning.","suggestedApproach":["Open with: 'Before we walk you through LTS, can you help us understand what you're looking for specifically?'","Key questions: What does your current risk management setup look like? What gaps does Radar leave? Are you looking for us to manage sports feeds, trade configuration, both?","Take notes on their answers — use these to tailor the Defend/LTS positioning"],"estimatedTime":"1h 30m","estimatedMinutes":90,"dependencies":"Netzer sync (ziv-hw-001) happening first","meetingTitle":"Ziv / Harrison","meetingDate":"2026-05-13","addedAt":1778692987259},{"id":"ziv-hw-003","title":"Sync with Anders after prediction markets call — understand MTS capabilities vs LTS","description":"After today's prediction markets ecosystem call, sync with Anders to understand MTS capabilities and compare them to LTS. Use this to better prepare for the HollywoodBets meeting.","assignedBy":"Self (agreed with Ziv)","deadline":"Today","priority":"high","meetingContext":"Ziv suggested pulling in Anders to understand MTS capabilities before the HollywoodBets meeting — knowing the MTS feature set will help Harrison position LTS correctly and avoid overlap or contradiction.","suggestedApproach":["Catch Anders at the end of or after the prediction markets call","Ask: what does MTS currently handle vs what LTS is expected to own?","Use the answer to refine the HollywoodBets messaging"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"Prediction markets call finishing","meetingTitle":"Ziv / Harrison","meetingDate":"2026-05-13","addedAt":1778692987259},{"id":"ziv-hbet-001","title":"Sync with Netzer (and possibly Anders) before Wednesday's HollywoodBets meeting","description":"Before the Wednesday call with HollywoodBets (Neil and Wade), sync with Netzer to align on what LTS capabilities actually exist vs are planned, and agree on how to message the gap honestly without losing the deal. HollywoodBets want LTS as a secondary risk provider alongside Radar for South African operations, e-cricket and e-soccer.","assignedBy":"Ziv","deadline":"Before Wed 20 May","priority":"critical","meetingContext":"Harrison: Sync with Netzel (and possibly Anders) before the Wednesday meeting to align on what LTS capabilities exist or are planned, and agree on messaging for client questions about current vs. future features.","suggestedApproach":["Message Netzer today — flag the Wednesday HollywoodBets call and ask for 30 mins to align on messaging","Key questions: what can we demo now (bet monitor, risk controls), what's the honest timeline for Defend, how do we position vs Radar","Agree on what to promise vs what to present as 'in development'"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Netzer availability before Wednesday","meetingTitle":"Ziv / Harrison","meetingDate":"2026-05-13","addedAt":1778692984494},{"id":"ziv-hbet-002","title":"Lead discovery on Wednesday's HollywoodBets call — clarify exactly what they need from LTS","description":"On the Wednesday call with HollywoodBets (Neil and Wade), Harrison to lead with discovery questions rather than a product demo. The goal is to understand exactly what risk management responsibilities they want LTS to own, so LSports can scope a realistic offer. HollywoodBets are a large SA sportsbook (4,000+ employees), currently using Radar exclusively, wanting LTS as a secondary provider for additional content/markets.","assignedBy":"Self (agreed with Ziv)","deadline":"Wed 20 May (the call)","priority":"high","meetingContext":"Harrison: Ask Hollywood Bets representatives on the Wednesday call to clarify exactly what services and risk management responsibilities they expect LTS to provide.","suggestedApproach":["Open with: 'Before we show you anything, can you walk us through exactly what you'd want LTS to handle vs what stays with Radar?'","Key areas to probe: which sports/markets, do they want full risk ops or just feed + config, what does their current Radar setup look like","Position LTS operational readiness (Sep 1 target) as a feature, not a limitation"],"estimatedTime":"1h (meeting) + 30m prep","estimatedMinutes":90,"dependencies":"Pre-call sync with Netzer","meetingTitle":"Ziv / Harrison","meetingDate":"2026-05-13","addedAt":1778692984494},{"id":"ziv-hbet-003","title":"Sync with Anders after prediction markets call to understand MTS capabilities vs LTS","description":"After the upcoming prediction markets call, sync with Anders to understand what MTS currently offers and how it compares to LTS, so Harrison can better prepare for the HollywoodBets meeting and position LTS accurately.","assignedBy":"Self (agreed with Ziv)","deadline":"Before Wed 20 May","priority":"high","meetingContext":"Harrison: Sync with Anders after the upcoming prediction markets call to understand MTS capabilities and compare them to LTS, to better prepare for the Hollywood Bets meeting.","suggestedApproach":["Attend / check in after the prediction markets call","Ask Anders: what does MTS currently offer that LTS doesn't, and vice versa","Use the comparison to sharpen the HollywoodBets pitch"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"Prediction markets call happening first","meetingTitle":"Ziv / Harrison","meetingDate":"2026-05-13","addedAt":1778692984494},{"id":"yoav-rev-004","title":"Follow up with Nessa re: Playtech outsourcing for LATAM customer support","description":"Harrison to follow up with Nessa about reaching out to Playtech's outsourced trading operation (the Bulgaria team referenced earlier) for potential customer support coverage in Latin America.","assignedBy":"Self (agreed with Yoav)","deadline":"This week","priority":"medium","meetingContext":"Yoav and Harrison discussed outsourcing options for LATAM support, given the language requirements (Spanish helpful but not mandatory). Playtech's outsourced operation came up as a potential solution.","suggestedApproach":["Message Nessa — ask if she's made contact with Playtech's outsourced team yet","If not, get the company name and contact (Ashkelon was going to send this earlier)","Assess whether they could cover LATAM-hours customer support for managed services clients"],"estimatedTime":"20m","estimatedMinutes":20,"dependencies":"Nessa's availability","meetingTitle":"Yoav/Harrison - Revenue Strategy Catch Up","meetingDate":"2026-05-12","addedAt":1778590940236},{"id":"comp-tier-001","title":"Chat with Netzer about Claude-based reporting/visualisation tools","description":"Discuss the feasibility and approach for building reporting/visualisation tools using Claude, covering both fake/test data and production data scenarios. Harrison volunteered this himself during the meeting. Key questions: how naive is it to build something with fake data in Claude? Can we build live production visualisations? The conclusion from the meeting was that basic CSV-import tools are definitely feasible; live data is the open question.","assignedBy":"Self","deadline":"This week","priority":"high","meetingContext":"Harrison: 'I'll chat to Netza as well, just be like, how naive is it to think that we can build something with fake data in the back of Claude... can we build some of this stuff in production using Claude?'","suggestedApproach":["Message Netzer to schedule a short call or async chat this week","Prepare 2-3 specific examples of what you'd want to build (e.g. CSV import visualiser, live bet monitoring dashboard) to ground the conversation","Come out with a clear yes/no on production data feasibility and a rough timeline"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"None","meetingTitle":"Competition Tiering Catch Up","meetingDate":"2026-05-11","addedAt":1778489108000},{"id":"comp-tier-002","title":"Review Benel's competition tiering PRD and incorporate into LTS/Defend requirements","description":"Gavin committed to touching base with Benel to get the PRD for his competition tiering work, and incorporate the relevant output into the LTS/Defend requirements. Harrison needs to stay closely aligned on this as it feeds directly into the Defend product scope.","assignedBy":"Gavin (via meeting agreement)","deadline":"This week","priority":"high","meetingContext":"Gavin: 'I'll touch base with Benel now, and get the PRD, and I'll add it into something that we want to do — stuff that we look to consume their output.'","suggestedApproach":["Follow up with Gavin to confirm he has the PRD and ask for a copy","Review Benel's tiering design against the current LTS/Defend competition tiering requirements","Identify gaps or alignment points and note what can be consumed vs what needs to be built differently"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Gavin getting PRD from Benel first","meetingTitle":"Competition Tiering Catch Up","meetingDate":"2026-05-11","addedAt":1778489108000},{"id":"daniel-002","title":"Prepare cash-out brief and 1-3 targeted customer questions for Daniel","description":"Daniel requested a brief description of what cash-out is, plus 1-3 targeted questions about cash-out usage for him to share with customers to investigate market needs. Harrison noted cash-out would be the third biggest product if measured as a sport at Flutter — a significant opportunity worth investigating.","assignedBy":"Daniel","deadline":"This week","priority":"high","meetingContext":"Daniel: 'Prepare a brief description of what cash-out is, along with 1-3 targeted questions about cash-out usage, for Daniel to share with customers and investigate market needs.'","suggestedApproach":["Write a 3-5 sentence plain-English description of cash-out (what it is, why it matters for B2B clients, the bet builder angle)","Draft 3 customer questions: e.g. 'Do you currently offer cash-out?' / 'What % of your GGR comes from cash-out?' / 'What's your biggest pain point with current cash-out providers?'","Send to Daniel via Slack or email — keep it brief, this is an input for his customer conversations"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"None","meetingTitle":"Daniel/Harrison - Tech Strategy Catch-Up","meetingDate":"2026-05-05","addedAt":1777982343000},{"id":"daniel-003","title":"Review the cash-out market landscape — providers, usage, customer satisfaction","description":"Daniel asked Harrison to conduct a review of the cash-out market: who provides it, how customers use it, satisfaction levels, and what competitors are doing. Given Harrison's Flutter background, this should be achievable from memory + light research.","assignedBy":"Daniel","deadline":"This week","priority":"medium","meetingContext":"Next steps: 'Harrison: Conduct a review of the cash-out market/landscape (who provides cash-out, usage by customers, satisfaction, competitors).'","suggestedApproach":["Draw on Flutter/SkyBet experience to outline the major cash-out providers (Kambi, SBTech, OpenBet, etc.) and their positioning","Note key customer satisfaction pain points from your experience (margin, speed, accuracy, bet builder cash-out limitations)","Package as a 1-page brief or slide — can be used to feed into a future PRD or sales material"],"estimatedTime":"1h 30m","estimatedMinutes":90,"dependencies":"None","meetingTitle":"Daniel/Harrison - Tech Strategy Catch-Up","meetingDate":"2026-05-05","addedAt":1777982343000},{"id":"daniel-004","title":"Build a Claude Co-pilot Skill for L Sports Defend as a proof of concept","description":"Daniel proposed creating a 'L Sports Defend' Claude skill in Cowork — e.g. 'Defend trade' or 'defense analysis' — as a learning exercise and proof of concept for how AI agents could automate tasks within Defend. Harrison expressed enthusiasm and agreed to pursue this.","assignedBy":"Daniel","deadline":"No hard deadline — PoC/learning exercise","priority":"medium","meetingContext":"Daniel: 'Build a Claude Co-pilot Skill for L Sports Defend (e.g. Defend trade or defense analysis) as a proof of concept/learning exercise.'","suggestedApproach":["Start with a simple skill — e.g. one that reads a SKILL.md and can configure a Defend setting or answer questions about a customer's risk setup","Use the existing Defend skill you already have in /mnt/skills/user/defend-settings/ as a foundation","Demo to Daniel when working — even a 10-minute demo of a basic task will validate the concept"],"estimatedTime":"2h","estimatedMinutes":120,"dependencies":"None — can start independently","meetingTitle":"Daniel/Harrison - Tech Strategy Catch-Up","meetingDate":"2026-05-05","addedAt":1777982343000},{"id":"daniel-005","title":"Review and tweak the initial GTX onboarding questionnaire, create Google Form version","description":"Harrison was asked to review and potentially adjust the initial GTX questionnaire used for customer onboarding, and create a Google Form version of it for easier distribution and data capture.","assignedBy":"Daniel","deadline":"This week","priority":"medium","meetingContext":"Next steps: 'Harrison: Review and potentially tweak the initial GTX questionnaire and create a Google form version for customer onboarding.'","suggestedApproach":["Get a copy of the current GTX questionnaire from Daniel or Itsik","Review for completeness and relevance to the LTS onboarding process","Recreate as a Google Form and share the link with Daniel"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Getting the existing questionnaire from Daniel","meetingTitle":"Daniel/Harrison - Tech Strategy Catch-Up","meetingDate":"2026-05-05","addedAt":1777982343000},{"id":"daniel-006","title":"Meet with Valerie (Chief of Staff) as part of onboarding","description":"As part of the standard onboarding process, Harrison needs to meet with Valerie, LSports' Chief of Staff.","assignedBy":"Daniel","deadline":"This week","priority":"low","meetingContext":"Next steps: 'Harrison: Meet with Valerie (Chief of Staff) as part of onboarding and team introductions.'","suggestedApproach":["Send Valerie a short intro message and request a 20-30 minute intro call","Come with a brief on your role and what you're working on so the conversation is productive","Ask about any admin/operational things she handles that you should know about"],"estimatedTime":"45m","estimatedMinutes":45,"dependencies":"None","meetingTitle":"Daniel/Harrison - Tech Strategy Catch-Up","meetingDate":"2026-05-05","addedAt":1777982343000},{"id":"dotan-001","title":"Target 90% automation of risk management processes within 2 months","description":"Dotan asked Harrison to work toward automating risk management processes to handle all bets in an automated way — targeting 90% automation with 10% manual review — within approximately 2 months. This is a strategic goal, not a single task, but Harrison needs to drive it.","assignedBy":"Dotan","deadline":"Within 2 months (~end June 2026)","priority":"high","meetingContext":"Next steps: 'Harrison: Automate risk management processes to handle all bets in an automated way, aiming for 90% automation with 10% manual review, within the next 2 months.'","suggestedApproach":["Define what 'automated' means for each bet type — pre-match, in-play, bet builder — and identify which decisions are already rule-based vs require judgement","Map the current manual touchpoints in the risk process and prioritise the highest-volume ones for automation first","Draft an automation roadmap and share with Itsik and Daniel for sign-off"],"estimatedTime":"Half day (initial plan)","estimatedMinutes":240,"dependencies":"Input from trading/risk team on current process","meetingTitle":"Dotan/Harrison - Intro","meetingDate":"2026-04-29","addedAt":1777467556000},{"id":"dotan-002","title":"Work with Claude/AI to backtest risk patterns and feed expertise into PRD","description":"Dotan asked Harrison to use Claude/AI tools to backtest and identify risk patterns, and to feed his own domain expertise and pain points into a PRD for the development team. This links closely to the automation goal.","assignedBy":"Dotan","deadline":"Ongoing — first pass this month","priority":"high","meetingContext":"Next steps: 'Harrison: Work with Claude/AI to backtest and identify risk patterns, and feed expertise and pain points into PRD for development.'","suggestedApproach":["Start by documenting 5-10 specific risk scenarios from your Flutter experience where automated rules worked well or failed","Use Claude to help structure these into backtestable hypotheses","Create a risk PRD section covering: bet types, trigger conditions, automated actions, and escalation rules"],"estimatedTime":"3h","estimatedMinutes":180,"dependencies":"Access to historical bet/risk data","meetingTitle":"Dotan/Harrison - Intro","meetingDate":"2026-04-29","addedAt":1777467556000},{"id":"dotan-003","title":"Catch up with Yoav on internal numbers/timelines and coordinate client onboarding delay","description":"Dotan asked Harrison to catch up with Yoav to share internal numbers and timelines, and to coordinate pushing back the onboarding of strategically important clients by ~3 months to ensure operational readiness before they go live.","assignedBy":"Dotan","deadline":"Next week","priority":"high","meetingContext":"Next steps: 'Harrison: Catch up with Yoav next week to provide internal numbers and timelines, and coordinate pushing back onboarding of strategically important clients for 3 months to ensure operational readiness.'","suggestedApproach":["Prepare a brief update on LTS readiness status, timeline to MVP, and known gaps","Agree with Yoav on which clients are 'strategically important' and which can proceed now","Document the agreed delay and communicate to relevant stakeholders"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Current LTS timeline from Itsik","meetingTitle":"Dotan/Harrison - Intro","meetingDate":"2026-04-29","addedAt":1777467556000},{"id":"aviv-002","title":"Provide clear timelines to the sales team on when the managed trading service will be ready","description":"The sales team needs to know when they can start onboarding different types of clients. Harrison to produce and communicate a clear readiness timeline — e.g. 'basic clients by X, full-service by Y'.","assignedBy":"Self (agreed in meeting)","deadline":"This week","priority":"high","meetingContext":"Harrison to provide clear timelines to the sales team regarding when the new risk/managed trading service will be ready for onboarding different types of clients (e.g., by September 1st for certain client types).","suggestedApproach":["Define 2-3 client tiers by complexity and what 'ready to onboard' means for each","Agree the dates internally first (with Itsik)","Send a short brief to the sales team — Yifat, Tina, Laurie, Yalo — so they can set correct expectations"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Internal readiness timeline","meetingTitle":"Data Integrity Catch Up w/ Aviv","meetingDate":"2026-04-28","addedAt":1778513190750},{"id":"peter-003","title":"Include bet profiling model milestones in the client-facing LTS roadmap","description":"Peter's model development timeline needs to be visible in the LTS roadmap that clients and sales see — including the 24/7 ops readiness target by September 1st.","assignedBy":"Self (agreed in meeting)","deadline":"With roadmap update — this week","priority":"medium","meetingContext":"Harrison to include bet profiling model development and testing milestones in the upcoming public/client-facing roadmap, ensuring readiness targets (e.g., 24/7 operations by September 1st) are clearly communicated.","suggestedApproach":["Add Peter's model phases to the LTS timeline: data matching complete, retrospective scoring, prospective testing, live deployment","Align with Peter on realistic dates first","Incorporate into the roadmap doc being prepared for management"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"Dates from Peter","meetingTitle":"Bet Profiling Catch Up w/ Peter","meetingDate":"2026-04-28","addedAt":1778513190750},{"id":"lts-plan-003","title":"Contact GTM (start with Tom Randler) for LTS opportunity list by region and revenue","description":"Harrison to reach out to the GTM team to get a list of potential LTS opportunities, split by region and projected revenue — to feed into the business case and staffing plan.","assignedBy":"Agreed in LTS Planning meeting","deadline":"This week","priority":"high","meetingContext":"Harrison to contact GTM department (starting with Tom Randler) to get list of potential LTS opportunities split by region and projected revenue.","suggestedApproach":["Message Tom Randler — brief intro to the ask, what format you want the data in, and why","Follow up with a meeting invite to go through the list together","Use the output to build the client scenarios and staffing plan"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"None","meetingTitle":"LTS Planning / Catch Up","meetingDate":"2026-04-28","addedAt":1778513190750},{"id":"lts-plan-005","title":"Look into Playtech's outsourced trading company in Bulgaria","description":"Raised as a potential source of trading talent or outsourced support. Harrison to investigate what Playtech's Bulgarian operation does and whether it's relevant for LTS staffing.","assignedBy":"Ashkelon (via meeting)","deadline":"No hard deadline","priority":"low","meetingContext":"Harrison to look into Playtech's outsourced company in Bulgaria for potential trading support.","suggestedApproach":["Ask Ashkelon for the company name (they committed to send it)","Do a quick search to understand their scale, capabilities, and cost model","Assess fit for LTS overnight trading support"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"Company name from Ashkelon","meetingTitle":"LTS Planning / Catch Up","meetingDate":"2026-04-28","addedAt":1778513190750},{"id":"lts-sync-002","title":"Coordinate with Shira to get bet/customer data ingested into Databricks for reporting","description":"Harrison (and Gavin) to work with Shira's BI team to get bet and customer data flowing into Databricks, enabling reporting and liability analysis. This was flagged in both the Defend scope meeting and the LTS Sync.","assignedBy":"Agreed across multiple meetings","deadline":"This week — unblock Shira","priority":"high","meetingContext":"Gavin (and/or Harrison): Ensure bet and customer data is ingested into Databricks for reporting and analysis (coordinate with Ash Shearer if needed).","suggestedApproach":["Speak with Gavin first to define the exact data requirements (which fields, what granularity)","Connect Shira and Gavin so the BI team can scope the work","Confirm timeline — Shira needs this to move forward on reporting"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Data requirements definition with Gavin","meetingTitle":"LTS Sync (Objectives/Roadmap/Status)","meetingDate":"2026-04-27","addedAt":1778513190750},{"id":"yifat-002","title":"Check with Itsik about attending the Lisbon trade show","description":"Harrison to confirm with Itsik whether he should attend the Lisbon trade show, and if approved, coordinate with Yifat for travel arrangements and introductions to the relevant people.","assignedBy":"Self (agreed with Yifat)","deadline":"This week","priority":"medium","meetingContext":"Harrison to check with ITSIC about attending the Lisbon trade show and, if approved, coordinate with Yifat to get connected with the relevant people for travel arrangements.","suggestedApproach":["Message Itsik: 'Is it worth me attending Lisbon? What's the format and who's going?'","If yes — connect with Yifat to sort travel and introductions","If no — no further action needed"],"estimatedTime":"15m","estimatedMinutes":15,"dependencies":"Itsik's approval","meetingTitle":"Marketing Catch Up w/ Yifat","meetingDate":"2026-04-23","addedAt":1778513190750},{"id":"mor-001","title":"Catch up with Adi Schwartz to review the player segmentation model","description":"Mor asked Harrison to follow up with Adi Schwartz to review the player segmentation model and understand how it could feed into LTS risk decisions.","assignedBy":"Mor","deadline":"This week","priority":"medium","meetingContext":"Harrison to catch up with Adi Schwartz to review the player segmentation model.","suggestedApproach":["Message Adi to set up a 30-min call or walkthrough","Review the model features list Mor is sending","Come out with a clear view on how segmentation output can be used in Defend's risk rules"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Mor sending the features list and model docs","meetingTitle":"Data Science / ML Catch Up w/ Mor","meetingDate":"2026-04-20","addedAt":1778513190750},{"id":"mor-002","title":"Catch up with Mayan (after maternity leave) to discuss model integration with Defend","description":"Harrison to schedule a catch-up with Mayan once she returns from maternity leave to discuss how the ML models (player segmentation, bet profiling) integrate with the Defend product.","assignedBy":"Mor","deadline":"When Mayan returns","priority":"low","meetingContext":"Harrison to catch up with Mayan (after her return from maternity leave) to discuss integration of models with Defend product.","suggestedApproach":["Note in your calendar to reach out when Mayan returns","Prepare a brief on the model integration questions you want to cover","Schedule a 45-min session"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Mayan returning from maternity leave","meetingTitle":"Data Science / ML Catch Up w/ Mor","meetingDate":"2026-04-20","addedAt":1778513190750},{"id":"defend-003","title":"Prepare clear messaging for clients on platform/market/competition limits","description":"Harrison to prepare clear client-facing messaging on how platform limits, market limits, and competition limits work — especially for low-liquidity or custom markets. Needed for IKU and upcoming onboardings.","assignedBy":"Self (agreed with Gavin)","deadline":"This week","priority":"medium","meetingContext":"Harrison to prepare clear messaging/expectations for clients regarding platform/market/competition limits and liability management, especially for low-liquidity or custom markets.","suggestedApproach":["Draft a 1-page client explainer on the limits hierarchy (platform > market > competition)","Include guidance on what clients can configure vs what LSports sets centrally","Review with Gavin before sending to any clients"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Gavin confirming limits logic","meetingTitle":"Defend Product Scope Catch Up","meetingDate":"2026-04-16","addedAt":1778513190750},{"id":"defend-004","title":"Propose an overnight support plan (potentially using Poland team) to Netta","description":"Harrison to consider options for overnight coverage and propose a plan to Netta — possibly leveraging the Poland support team for night shifts with clear operational instructions.","assignedBy":"Self (agreed with Gavin)","deadline":"Next week","priority":"medium","meetingContext":"Harrison to consider and propose to Netta a plan for overnight support, potentially leveraging the Poland team, and define clear operational instructions for them.","suggestedApproach":["Define what 'overnight support' actually needs to cover for managed trading clients","Assess Poland team capacity and willingness","Draft a simple operational runbook (escalation steps, what decisions they can make vs escalate)","Present to Netta as a proposal"],"estimatedTime":"2h","estimatedMinutes":120,"dependencies":"Poland team capacity info","meetingTitle":"Defend Product Scope Catch Up","meetingDate":"2026-04-16","addedAt":1778513190750},{"id":"yalo-001","title":"Define the operational process for overnight/ops support within 3-5 weeks","description":"Yalo needs clarity on what the overnight operations support process will look like so they can plan customer commitments and involve the Poland team if needed.","assignedBy":"Self (agreed with Yalo)","deadline":"Within 3-5 weeks (~mid May)","priority":"high","meetingContext":"Harrison to work out in the next 3-5 weeks what the operational process might look like for overnight/operations support, and then coordinate with Yalo to determine required support.","suggestedApproach":["Map the hours where manual oversight is needed vs automated rules can handle it","Define escalation path for overnight issues","Agree with Yalo what Poland team handles vs what needs a trading expert"],"estimatedTime":"2h","estimatedMinutes":120,"dependencies":"Poland team buy-in","meetingTitle":"Customer Catch Up w/ Yalo","meetingDate":"2026-04-16","addedAt":1778513190750},{"id":"staffing-004","title":"Map out an operational coverage plan (including night shifts) for Itsik and Netzer","description":"Harrison to plan out how operational coverage will work — including who handles nights and weekends — and present this to Itsik and Netzer for feedback and approval.","assignedBy":"Itsik","deadline":"Before Netzer meeting","priority":"high","meetingContext":"Harrison to map out a plan for operational coverage (including potential use of support team members for night shifts) and present to Itsik and Netzer for feedback and approval.","suggestedApproach":["Define the coverage model: 24/7 from day 1, or phased?","Map the Poland support team option for nights","Show hourly coverage gaps and proposed solutions","Link to the overnight support plan being built for Netta/Yalo"],"estimatedTime":"1h 30m","estimatedMinutes":90,"dependencies":"Poland team capacity info","meetingTitle":"Job Descriptions / Staffing Catch Up w/ Itsik","meetingDate":"2026-04-16","addedAt":1778513190750}],"completedTasks":[{"id":"yoav-rev-002","title":"Get Salesforce access from Daniel — track incoming LTS leads","description":"Harrison agreed with Yoav that having Salesforce access (or at minimum relevant field visibility and lead notifications) is important to track the ~10 customers in the managed services pipeline. Speak with Daniel to get set up.","assignedBy":"Self (agreed with Yoav)","deadline":"This week","priority":"high","meetingContext":"Yoav and Harrison discussed needing better visibility on the sales pipeline — 10 customers in pipeline, 3-4 in advanced stages including DGN2, Blockotech, Vibra, and Maker. Harrison agreed to pursue Salesforce access.","suggestedApproach":["Message Daniel: ask for Salesforce access or at minimum a view on the LTS pipeline accounts","Specify what you need: lead status, contact details, deal stage for managed services prospects","If full access isn't possible, ask for a weekly pipeline update or Slack notifications on LTS deals"],"estimatedTime":"15m","estimatedMinutes":15,"dependencies":"Daniel's approval","meetingTitle":"Yoav/Harrison - Revenue Strategy Catch Up","meetingDate":"2026-05-12","addedAt":1778590940236,"completedAt":1778630400000,"actualMinutes":null},{"id":"yoav-rev-001","title":"Send information about Jumbo (Chinese operator targeting Brazil) to Yoav","description":"Harrison to send Yoav details about Jumbo, a Chinese-based operator targeting the Brazilian market that came up in the revenue strategy discussion. Yoav needs visibility on this as a potential customer.","assignedBy":"Self (agreed with Yoav)","deadline":"This week","priority":"medium","meetingContext":"Harrison mentioned Jumbo as an interesting development — a Chinese operator targeting Brazil. Yoav wasn't familiar and asked Harrison to send the details.","suggestedApproach":["Pull together what you know about Jumbo — company background, target market, size","Send to Yoav via Slack with a note on why they might be a good LTS prospect","Flag whether they've been in contact with LSports sales already"],"estimatedTime":"20m","estimatedMinutes":20,"dependencies":"None","meetingTitle":"Yoav/Harrison - Revenue Strategy Catch Up","meetingDate":"2026-05-12","addedAt":1778590940236,"completedAt":1778544000000,"actualMinutes":null},{"id":"yoav-rev-003","title":"Send old Flutter/Genius Sports quotes to Yoav","description":"Harrison to share Flutter/Genius Sports pricing quotes from his previous role with Yoav to help benchmark LSports' RevShare pricing strategy for the LATAM market.","assignedBy":"Self (agreed with Yoav)","deadline":"This week","priority":"medium","meetingContext":"Yoav explained their RevShare approach — aiming to be similar to or 1-2% below Radar and Genius. Harrison's Flutter/Genius quotes would help validate their pricing position.","suggestedApproach":["Dig out any Genius Sports or Flutter trading services pricing documents from your previous role","Send to Yoav with context on the deal size and market they related to","Note any caveats (e.g. volume discounts, custom terms)"],"estimatedTime":"20m","estimatedMinutes":20,"dependencies":"Having the documents accessible","meetingTitle":"Yoav/Harrison - Revenue Strategy Catch Up","meetingDate":"2026-05-12","addedAt":1778590940236,"completedAt":1778544000000,"actualMinutes":null},{"id":"itsik-001","title":"Set expectations with Yoav on current service capabilities before customer comms","description":"Before the sales team communicates anything to customers, Harrison needs to align Yoav on what the service can and can't do right now, so no promises are made that can't be kept.","assignedBy":"Itsik","deadline":"ASAP","priority":"high","meetingContext":"Harrison to set expectations with Yoav regarding current service capabilities and roadmap before communicating with customers.","suggestedApproach":["Draft a one-page 'what we can deliver now vs later' summary","Walk Yoav through it in a 30-min call","Agree on what the sales team can and cannot say to prospects"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Current roadmap from Itsik/Gavin","meetingTitle":"Harrison / Itsik","meetingDate":"2026-04-29","addedAt":1778513190750,"completedAt":1778544000000,"actualMinutes":null},{"id":"itsik-004","title":"Update Yoav with clearer 3C timelines by next week","description":"Yoav needs a clear update on 3C deliverable timelines. This was raised in the LTS Sync meeting (Apr 27) as well — a recurring item.","assignedBy":"Itsik","deadline":"Next week","priority":"high","meetingContext":"Harrison to update Yoav by next week regarding clearer timelines for 3C deliverables.","suggestedApproach":["Align internally first on 3C's expected go-live and what's blocking it","Send Yoav a brief update: current status, key milestones, and a realistic go-live date range","Flag any dependencies that could shift the date"],"estimatedTime":"30m","estimatedMinutes":30,"dependencies":"3C timeline clarity from Gavin/Itsik","meetingTitle":"Harrison / Itsik","meetingDate":"2026-04-29","addedAt":1778513190750,"completedAt":1778544000000,"actualMinutes":null},{"id":"daniel-001","title":"Map out two scenarios/options for Gavin's role and present by Thursday","description":"Daniel asked Harrison to assess two scenarios regarding Gavin's potential trading manager role — likely: (1) Gavin takes the role internally, or (2) a Plan B external hire. Present findings to Daniel by the Thursday after the May 5 meeting.","assignedBy":"Daniel","deadline":"Overdue — was due ~Thu 7 May","priority":"critical","meetingContext":"Daniel: 'Map out two scenarios/options regarding Gavin's role and present findings by Thursday of next week.'","suggestedApproach":["Draft a short comparison: Gavin internally (pros/cons, readiness, timeline) vs external hire (pipeline, time to hire, risk)","Check where the interview/evaluation process with Gavin stands","Send a brief summary to Daniel — doesn't need to be formal, a Slack message or short doc will do"],"estimatedTime":"45m","estimatedMinutes":45,"dependencies":"Evaluation outcome with Gavin","meetingTitle":"Daniel/Harrison - Tech Strategy Catch-Up","meetingDate":"2026-05-05","addedAt":1777982343000,"completedAt":1778457600000,"actualMinutes":null},{"id":"lts-plan-001","title":"Attend product roadmap session with Itsik, Neta, Gavin, Mayan and Shay","description":"A product roadmap session was scheduled involving Itsik, Neta, Gavin, Mayan, and Shay to detail requirements and approaches for LTS. Harrison needs to attend and come prepared with his LTS scope and requirements.","assignedBy":"Daniel","deadline":"Was scheduled ~Thu 7 May — check if done","priority":"critical","meetingContext":"Next steps: 'Harrison: Attend product roadmap session with ITZIC, Neta, Gavin, Mayan, and Shay to detail requirements and approaches for LTS.'","suggestedApproach":["Confirm whether this session happened on Thursday 7 May — if so, review outputs and follow up on any actions from it","If not yet done, reschedule urgently with all attendees","Come prepared with the LTS scope document and a list of open questions/decisions needed"],"estimatedTime":"2h (meeting) + 30m prep","estimatedMinutes":150,"dependencies":"Availability of Itsik, Neta, Gavin, Mayan, Shay","meetingTitle":"Daniel/Harrison - Tech Strategy Catch-Up","meetingDate":"2026-05-05","addedAt":1777982343000,"completedAt":1778457600000,"actualMinutes":null},{"id":"itsik-002","title":"Build and send a timeline view showing key deliverables and minimum dates","description":"Itsik asked Harrison to produce a clear timeline — by deliverable — showing minimum dates for each milestone, assuming hiring and tech progress goes to plan.","assignedBy":"Itsik","deadline":"Overdue — was due same day (Apr 29 EOD)","priority":"critical","meetingContext":"Harrison to build and send a timeline view (by end of day/evening) showing key deliverables and minimum dates, assuming hiring and tech progress.","suggestedApproach":["Pull together the key LTS milestones: MVP, trading hire, 24/7 ops, first client live","Plot them on a month-by-month timeline (a simple table or slide is fine)","Send to Itsik and Daniel today"],"estimatedTime":"1h 30m","estimatedMinutes":90,"dependencies":"Latest roadmap estimates from Gavin/Netta","meetingTitle":"Harrison / Itsik","meetingDate":"2026-04-29","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"itsik-003","title":"Set up two 1-hour sessions with Gavin and Netta to estimate and prioritise product/tech tasks","description":"Harrison to organise two structured review meetings with Gavin and Netta (and optionally Chai) to work through all outstanding product and tech tasks, estimate effort, and agree priorities.","assignedBy":"Itsik","deadline":"This week","priority":"high","meetingContext":"Harrison to set up two one-hour meetings with Gavin, Netta (and optionally Chai) to review, estimate, and prioritize all relevant product/tech tasks.","suggestedApproach":["Send calendar invites for two 1-hour blocks this week or next","Prepare the task backlog in advance so time isn't wasted compiling it in the meeting","Output: a prioritised, estimated list you can share with Itsik and Daniel"],"estimatedTime":"30m setup + 2h meetings","estimatedMinutes":150,"dependencies":"Gavin and Netta availability","meetingTitle":"Harrison / Itsik","meetingDate":"2026-04-29","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"aviv-001","title":"Meet Daniel and Itsik to discuss early-stage leads, tech requirements and staffing","description":"Following the Data Integrity catch-up, Harrison committed to meet with Daniel and Itsik to understand more about early-stage pipeline leads and the current status of tech requirements and team hiring.","assignedBy":"Self (volunteered)","deadline":"Was due week of Apr 28 — check if done","priority":"medium","meetingContext":"Harrison to meet with Daniel and Itsyk next week to understand more about early-stage leads and the status of tech requirements and staffing for the new team.","suggestedApproach":["Confirm whether this meeting happened","If not, schedule this week with Daniel and Itsik","Agenda: pipeline leads review, tech timeline, open roles and hiring plan"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"None","meetingTitle":"Data Integrity Catch Up w/ Aviv","meetingDate":"2026-04-28","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"peter-001","title":"Provide Peter with list of key bet characterisation parameters and definitions","description":"Peter needs a list of the parameters Harrison wants used to characterise customers and bets — with definitions — so he can build the bet profiling model correctly.","assignedBy":"Self (agreed with Peter)","deadline":"ASAP — Peter is blocked without this","priority":"critical","meetingContext":"Harrison to provide Peter with a list/set of key parameters (and their definitions) that will be used to characterize customers and bets, focusing on what is required for the model.","suggestedApproach":["List the key dimensions: stake size, odds, market type, speed of bet, customer type, win rate, etc.","Add a brief definition for each so Peter's team can map them to Altenar data fields","Send to Peter within 2 days — he's waiting on this to start model development"],"estimatedTime":"2h","estimatedMinutes":120,"dependencies":"None — can do from experience","meetingTitle":"Bet Profiling Catch Up w/ Peter","meetingDate":"2026-04-28","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"peter-002","title":"Build and share 'L Sports recommended settings' for different markets/brands","description":"Peter needs a set of default parameter recommendations from Harrison — covering different market types and brand profiles — as a starting point for model calibration and customer onboarding.","assignedBy":"Self (agreed in meeting)","deadline":"This week","priority":"high","meetingContext":"Harrison to build and share 'L Sports recommended settings' for different markets/brands, including default parameter sets, as a basis for customer onboarding and model development.","suggestedApproach":["Define 3-4 brand archetypes (e.g. sharp-focused, recreational, high-volume small stakes)","Set recommended default limits, delay settings, and stake factors for each","Package as a reference doc for Peter and also for the customer onboarding process"],"estimatedTime":"3h","estimatedMinutes":180,"dependencies":"None — draw on experience","meetingTitle":"Bet Profiling Catch Up w/ Peter","meetingDate":"2026-04-28","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"lts-plan-002","title":"Send email to Eden/Itsik/Adam to open the LTS manager position","description":"Harrison to formally initiate the hiring process for the LTS manager role — including a candidate referral, job description, and budget details.","assignedBy":"Agreed in LTS Planning meeting","deadline":"This week","priority":"high","meetingContext":"Harrison to send email to Eden/ITSIC/Adam to open manager position for LTS, including referral for candidate, job description, and budget details.","suggestedApproach":["Draft the email: role rationale, JD link, candidate referral name, and budget ask","CC Itsik and Adam so they're aligned","Follow up if no response within 2 days"],"estimatedTime":"45m","estimatedMinutes":45,"dependencies":"JD draft (can reuse the trading specialist JD rewritten per the staffing meeting action)","meetingTitle":"LTS Planning / Catch Up","meetingDate":"2026-04-28","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"lts-plan-004","title":"Prepare LTS strategy and roadmap presentation for management","description":"Harrison to prepare a presentation covering the LTS strategy and roadmap for the management team — likely including timeline, client scenarios, staffing plan, and key milestones.","assignedBy":"Agreed in LTS Planning meeting","deadline":"Next week","priority":"high","meetingContext":"Harrison to prepare presentation for management meeting about LTS strategy and roadmap.","suggestedApproach":["Outline: market opportunity, LTS scope, timeline (phase 1/2/3), staffing plan, client scenarios, key risks","Use the GTM opportunity data and the timeline view already being built","Keep it to 10-15 slides — clear and decision-focused"],"estimatedTime":"3h","estimatedMinutes":180,"dependencies":"GTM opportunity list, timeline view, staffing plan","meetingTitle":"LTS Planning / Catch Up","meetingDate":"2026-04-28","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"lts-sync-001","title":"Reach out to IT/Dan to get Claude access set up","description":"Harrison was noted as needing access to Claude tools — this should already be sorted given the work being done, but worth confirming formal access is in place.","assignedBy":"Itsik","deadline":"If not done — urgent","priority":"medium","meetingContext":"Harrison to reach out to IT support (or Dan) to get access to Claude.","suggestedApproach":["Check if Claude Pro/Team access is already active","If not, contact Dan or IT support with the request","Ask Itsik to follow up with Netzer as agreed in the meeting"],"estimatedTime":"15m","estimatedMinutes":15,"dependencies":"None","meetingTitle":"LTS Sync (Objectives/Roadmap/Status)","meetingDate":"2026-04-27","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"yifat-001","title":"Send Genius Sports proposal documents to Yifat (and discreetly to Laurie and Tina)","description":"Harrison committed to sharing Genius Sports proposal documents with Yifat for marketing reference, and to pass them discreetly to Laurie and Tina from sales.","assignedBy":"Self (agreed with Yifat)","deadline":"This week","priority":"medium","meetingContext":"Harrison to send the Genius Sports proposal documents to Yifat and (with discretion) to Laurie and Tina from sales.","suggestedApproach":["Locate the Genius Sports proposal documents","Send to Yifat with context on what they are","Forward separately and discreetly to Laurie and Tina with a note on handling"],"estimatedTime":"20m","estimatedMinutes":20,"dependencies":"Access to Genius proposal docs","meetingTitle":"Marketing Catch Up w/ Yifat","meetingDate":"2026-04-23","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"afun-001","title":"Prepare to present Defend and LTS capabilities in the ECHO demo/sync meeting","description":"Harrison was assigned to prepare for and present LSports' Defend product and LTS capabilities in an upcoming demo/sync with the ECHO partner.","assignedBy":"Nadav/Itsik","deadline":"Check if ECHO meeting has been scheduled yet","priority":"high","meetingContext":"Harrison to prepare to present Defend product and LTS capabilities in the upcoming ECHO demo/sync meeting.","suggestedApproach":["Confirm with Nadav whether the ECHO demo meeting has been scheduled","Prepare a 15-20 min walkthrough of Defend's risk management features and LTS capabilities","Align with Gavin on which Defend features to showcase"],"estimatedTime":"2h prep","estimatedMinutes":120,"dependencies":"Meeting scheduled by Nadav","meetingTitle":"AFun Sync","meetingDate":"2026-04-20","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"defend-001","title":"Pitch to Netta the need for a small dedicated LTS ops team (manager + SME)","description":"Harrison to make the case to Netta (and relevant stakeholders) for a dedicated LTS operations team — at minimum a manager and a subject matter expert — to support the service.","assignedBy":"Self (agreed with Gavin)","deadline":"Before the next management meeting","priority":"high","meetingContext":"Harrison to pitch to Netta (and relevant stakeholders) the need for a small dedicated team, including a manager and a subject matter expert, to support LTS operations.","suggestedApproach":["Prepare a concise business case: client commitments, current gaps, proposed team structure, cost estimate","Frame it around the 3C opportunity and upcoming client pipeline","Request a 20-min slot with Netta this week or next"],"estimatedTime":"1h 30m","estimatedMinutes":90,"dependencies":"GTM opportunity data to strengthen the business case","meetingTitle":"Defend Product Scope Catch Up","meetingDate":"2026-04-16","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"defend-002","title":"Coordinate with Shira on risk/bet data requirements for reporting","description":"Harrison to speak with Gavin to define requirements, then align with Shira on what data is needed for risk management reporting and how to get it into Snowflake or Databricks.","assignedBy":"Shira / Gavin","deadline":"This week","priority":"high","meetingContext":"Harrison to speak with Gavin (product manager for Defend) to define requirements and types of data needed for risk management reporting and analysis.","suggestedApproach":["Quick call with Gavin to agree the data requirements (fields, granularity, frequency)","Pass the requirements to Shira so she can scope the BI work","Follow up to ensure an IT ticket is raised if needed for access"],"estimatedTime":"45m","estimatedMinutes":45,"dependencies":"Gavin availability","meetingTitle":"Defend Product Scope Catch Up","meetingDate":"2026-04-16","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"staffing-001","title":"Set up a meeting with Daniel Netzer (invite Itsik) for week of Apr 26-30","description":"Harrison to schedule a planning, budget, and team structure meeting with Daniel Netzer, inviting Itsik — to be held in the week of April 26-30.","assignedBy":"Itsik","deadline":"Overdue — was due week of Apr 26","priority":"critical","meetingContext":"Harrison to set up a meeting with Daniel Netzer (and invite Itsik) for the week of the 26th-30th to discuss planning, budget, and team structure.","suggestedApproach":["Check if this meeting happened — if so, review outputs","If not, schedule immediately with Daniel Netzer and Itsik","Come prepared with the strategic plan and blueprint per the next action"],"estimatedTime":"1h","estimatedMinutes":60,"dependencies":"Daniel Netzer and Itsik availability","meetingTitle":"Job Descriptions / Staffing Catch Up w/ Itsik","meetingDate":"2026-04-16","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"staffing-002","title":"Prepare and share strategic plan + blueprint (roles, responsibilities, timeline, assumed onboarding)","description":"Harrison to prepare a strategic plan and blueprint for LTS — covering roles, responsibilities, timeline, and assumed customer onboarding schedule — and share with Itsik and Daniel Netzer ahead of their meeting.","assignedBy":"Itsik","deadline":"Before the Netzer meeting","priority":"high","meetingContext":"Harrison to prepare and share a strategic plan and blueprint (including roles, responsibilities, timeline, and assumed customer onboarding) with Itsik and Netzer ahead of the meeting.","suggestedApproach":["Structure: team org chart (proposed), hiring timeline, onboarding phases, first 3 clients assumed, key risks","Keep to 1-2 pages or a short deck — it's a working document, not a polished presentation","Share in Slack or email 24h before the meeting"],"estimatedTime":"3h","estimatedMinutes":180,"dependencies":"GTM opportunity data","meetingTitle":"Job Descriptions / Staffing Catch Up w/ Itsik","meetingDate":"2026-04-16","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"staffing-003","title":"Rewrite trading specialist JD into a risk expert role","description":"The existing trading specialist job description needs to be rewritten as a 'risk expert' role, better reflecting what LTS actually needs. To be reviewed with Itsik and Netzer.","assignedBy":"Itsik","deadline":"Before Netzer meeting","priority":"medium","meetingContext":"Harrison to rewrite the trading specialist job description into a risk expert role and prepare for review/discussion with Itsik and Netzer.","suggestedApproach":["Start from the existing trading specialist JD","Reframe focus: risk management, bet profiling, automated system oversight, Defend configuration","Get Claude to help draft — it'll take 20 minutes"],"estimatedTime":"45m","estimatedMinutes":45,"dependencies":"Existing JD to rewrite","meetingTitle":"Job Descriptions / Staffing Catch Up w/ Itsik","meetingDate":"2026-04-16","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"anatoli-001","title":"Forward IKU's multiples requirements to Anatoli for feasibility review","description":"Harrison to pass IKU's specific requirements for multiples (and any other features they need) to Anatoli so he can assess feasibility for prediction markets.","assignedBy":"Self (agreed with Anatoli)","deadline":"This week","priority":"high","meetingContext":"Harrison to forward IKU's specific requirements for multiples (and any other features) to Anatoli for feasibility review.","suggestedApproach":["Pull IKU's requirements from your onboarding notes or their questionnaire","Forward the relevant items to Anatoli with context on their June launch timeline","Ask for a response within the week"],"estimatedTime":"20m","estimatedMinutes":20,"dependencies":"IKU requirements document","meetingTitle":"Prediction Markets Catch Up w/Anatoli","meetingDate":"2026-04-15","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null},{"id":"anatoli-002","title":"Check with Gavin on prediction market bets not showing in Defend","description":"There's an issue where prediction market bets are not appearing in Defend. Harrison to investigate with Gavin and follow up with Anatoli if needed.","assignedBy":"Self (noted in meeting)","deadline":"This week","priority":"medium","meetingContext":"Harrison to check with Gavin regarding the issue of prediction market bets not showing in Defend and follow up with Anatoli if needed.","suggestedApproach":["Ask Gavin if he's aware of the issue and what the status is","If it's a known bug, get a timeline for the fix","Update Anatoli on the status so he can set expectations with IKU"],"estimatedTime":"20m","estimatedMinutes":20,"dependencies":"None","meetingTitle":"Prediction Markets Catch Up w/Anatoli","meetingDate":"2026-04-15","addedAt":1778513190750,"completedAt":1778457600000,"actualMinutes":null}],"lastSync":"2026-05-11T11:30:00.000Z"};
+var KA='ar6_a', KC='ar6_c';
+
+function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
+function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+
+var C=(function(){
+  var keys=['ar6_c','ar5_c','ar4_c','ar_v3_completed','ar_completed_v2'];
+  for(var i=0;i<keys.length;i++){var v=lg(keys[i]);if(v&&v.length>0)return v;}
+  return [];
+})();
+var A=(function(){
+  var base=lg(KA)||JSON.parse(JSON.stringify(SEED.activeTasks));
+  var done={};for(var i=0;i<C.length;i++)done[C[i].id]=true;
+  return base.filter(function(t){return !done[t.id];});
+})();
+
+var _saveTimer=null;
+function markDirty(){
+  var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');
+  if(dot)dot.className='sdot dirty';
+  if(lbl)lbl.textContent='Unsaved';
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(function(){
+    ls(KA,A);ls(KC,C);
+    if(dot)dot.className='sdot';
+    if(lbl)lbl.textContent='All saved';
+  },900);
+}
+
+function go(n){
+  var views=document.querySelectorAll('.view');
+  for(var i=0;i<views.length;i++)views[i].classList.remove('on');
+  var navs=document.querySelectorAll('.ni');
+  for(var i=0;i<navs.length;i++)navs[i].classList.remove('on');
+  document.getElementById('view-'+n).classList.add('on');
+  document.getElementById('ni-'+n).classList.add('on');
+  if(n==='tasks')    renderTasks();
+  if(n==='completed')renderCompleted();
+  if(n==='analytics')renderAnalytics();
+  if(n==='meetings') renderMeetings();
+}
+
+var filt='all',srt='priority';
+var PC={critical:'var(--crit)',high:'var(--hi)',medium:'var(--med)',low:'var(--lo)'};
+var PO={critical:0,high:1,medium:2,low:3};
+
+function getFiltered(){
+  var t=(filt==='all')?A.slice():A.filter(function(x){return x.priority===filt;});
+  if(srt==='priority'){
+    t.sort(function(a,b){
+      var pa=(PO[a.priority]!==undefined)?PO[a.priority]:4;
+      var pb=(PO[b.priority]!==undefined)?PO[b.priority]:4;
+      return pa-pb;
+    });
+  } else if(srt==='time'){
+    t.sort(function(a,b){return (b.estimatedMinutes||0)-(a.estimatedMinutes||0);});
+  } else if(srt==='date'){
+    t.sort(function(a,b){return new Date(b.meetingDate||0)-new Date(a.meetingDate||0);});
+  } else if(srt==='deadline'){
+    t.sort(function(a,b){
+      /* Overdue/ASAP first, then by date, undated last */
+      function rank(task){
+        var dl=task.deadline||'';
+        if(/overdue/i.test(dl))return 0;
+        if(/asap/i.test(dl))return 1;
+        /* Use explicit dueDate if set */
+        if(task.dueDate){var d=new Date(task.dueDate+'T12:00:00');if(!isNaN(d.getTime()))return d.getTime();}
+        /* Extract date from parentheses e.g. "(by Thu 14 May)" or "(~end June 2026)" */
+        var paren=dl.match(/\((?:by\s+|~end\s+)?([^)]+)\)/i);
+        if(paren){var d2=new Date(paren[1]+' 2026');if(!isNaN(d2.getTime()))return d2.getTime();}
+        /* Try parsing the whole string */
+        var d3=new Date(dl);if(!isNaN(d3.getTime()))return d3.getTime();
+        /* Contains a month name */
+        var months=/jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i;
+        if(months.test(dl)){var d4=new Date(dl.replace(/by\s+|before\s+\w+\s+meeting\s*/i,''));if(!isNaN(d4.getTime()))return d4.getTime();}
+        return 9999999999999;
+      }
+      return rank(a)-rank(b);
+    });
+  }
+  return t;
+}
+
+function renderStats(){
+  var wa=Date.now()-7*86400000;
+  document.getElementById('s1').textContent=A.length;
+  document.getElementById('s2').textContent=A.filter(function(t){return t.priority==='critical';}).length;
+  document.getElementById('s3').textContent=fmtM(A.reduce(function(s,t){return s+parseM(t.estimatedTime||'0');},0));
+  document.getElementById('s4').textContent=C.filter(function(t){return (t.completedAt||0)>wa;}).length;
+  document.getElementById('nbadge').textContent=A.length;
+  var cb=document.getElementById('cbadge');
+  if(C.length){cb.style.display='';cb.textContent=C.length;}else{cb.style.display='none';}
+}
+
+function renderFilterBar(){
+  var cnt={all:A.length,critical:0,high:0,medium:0,low:0};
+  for(var i=0;i<A.length;i++){var p=A[i].priority;if(cnt[p]!==undefined)cnt[p]++;}
+  var fb=document.getElementById('fb');fb.innerHTML='';
+  function makeChip(label,val,count,dotColor){
+    var d=document.createElement('div');
+    d.className='fc'+(filt===val?' on':'');
+    d.setAttribute('data-fval',val);
+    if(dotColor){var dot=document.createElement('span');dot.className='fcd';dot.style.background=dotColor;d.appendChild(dot);}
+    d.appendChild(document.createTextNode(label));
+    var sp=document.createElement('span');sp.className='fcc';sp.textContent=' '+count;d.appendChild(sp);
+    d.addEventListener('click',function(){filt=this.getAttribute('data-fval');renderTasks();});
+    fb.appendChild(d);
+  }
+  makeChip('All','all',cnt.all,null);
+  makeChip('Critical','critical',cnt.critical,'var(--crit)');
+  makeChip('High','high',cnt.high,'var(--hi)');
+  makeChip('Medium','medium',cnt.medium,'var(--med)');
+  makeChip('Low','low',cnt.low,'var(--lo)');
+  var sel=document.createElement('select');sel.className='fso';sel.style.marginLeft='auto';
+  var opts=[['priority','Priority'],['time','Est. Time'],['deadline','Deadline'],['date','Meeting Date']];
+  for(var i=0;i<opts.length;i++){
+    var o=document.createElement('option');o.value=opts[i][0];o.textContent=opts[i][1];
+    if(srt===opts[i][0])o.selected=true;sel.appendChild(o);
+  }
+  sel.addEventListener('change',function(){srt=this.value;renderTasks();});
+  fb.appendChild(sel);
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+/* Build the "Open in Claude" URL with full task context */
+function buildClaudeUrl(t){
+  var ctx='';
+  ctx+='I need to action the following task from a recent meeting:\n\n';
+  ctx+='TASK: '+t.title+'\n';
+  ctx+='PRIORITY: '+t.priority+'\n';
+  ctx+='DEADLINE: '+(t.deadline||'Not set')+'\n';
+  ctx+='EST. TIME: '+(t.estimatedTime||'Not set')+'\n';
+  ctx+='ASSIGNED BY: '+(t.assignedBy||'Not set')+'\n';
+  ctx+='SOURCE MEETING: '+(t.meetingTitle||'Not set')+' ('+(t.meetingDate||'')+')'+'\n\n';
+  if(t.meetingContext)ctx+='MEETING CONTEXT:\n"'+t.meetingContext+'"\n\n';
+  if(t.description)ctx+='WHAT NEEDS TO BE DONE:\n'+t.description+'\n\n';
+  if(t.dependencies&&!/^(none|n\/a)$/i.test(t.dependencies))ctx+='DEPENDENCIES: '+t.dependencies+'\n\n';
+  if(t.suggestedApproach&&t.suggestedApproach.length){
+    ctx+='SUGGESTED APPROACH:\n';
+    for(var i=0;i<t.suggestedApproach.length;i++)ctx+=(i+1)+'. '+t.suggestedApproach[i]+'\n';
+    ctx+='\n';
+  }
+  ctx+='Please help me work through this task. ';
+  if(t.meetingTitle){
+    ctx+='You have access to the Zoom connector — please search for the meeting called "'+t.meetingTitle+'"';
+    if(t.meetingDate){ctx+=' from '+t.meetingDate;}
+    ctx+=' and read the full transcript to get additional context before we start. ';
+  }
+  ctx+='Then help me produce the output or draft needed to complete it.';
+  return 'https://claude.ai/new?q='+encodeURIComponent(ctx);
+}
+
+function buildCard(t){
+  var pc=PC[t.priority]||'var(--tx3)';
+  var isOverdue=/(overdue)/i.test(t.deadline||'');
+  var isUrgent=/(today|asap)/i.test(t.deadline||'');
+  var dlc=isOverdue?'var(--crit)':isUrgent?'var(--hi)':'var(--tx2)';
+  var steps='';
+  var sa=t.suggestedApproach||[];
+  for(var i=0;i<sa.length;i++)steps+='<div class="step"><div class="snum">'+(i+1)+'</div><div class="stxt">'+esc(sa[i])+'</div></div>';
+  var priOpts='';
+  var ps=['critical','high','medium','low'];
+  for(var i=0;i<ps.length;i++)priOpts+='<option value="'+ps[i]+'"'+(t.priority===ps[i]?' selected':'')+'>'+ps[i].charAt(0).toUpperCase()+ps[i].slice(1)+'</option>';
+  var hasDep=t.dependencies&&!/^(none|n\/a)$/i.test(t.dependencies);
+  var claudeUrl=buildClaudeUrl(t);
+  var h='';
+  h+='<div class="card" id="card-'+t.id+'" data-id="'+t.id+'">';
+
+  /* ── Header ── */
+  h+='<div class="ch" data-action="tog">';
+  h+='<div class="cpb" style="background:'+pc+'"></div>';
+  h+='<div class="cm">';
+  h+='<div class="ct">'+esc(t.title)+'</div>';
+
+  /* Metadata row — clean label+value pairs, no emoji clutter */
+  h+='<div class="cmt">';
+  h+='<span class="pill '+t.priority+'"><span class="pd" style="background:'+pc+'"></span>'+(t.priority||'').toUpperCase()+'</span>';
+  h+='<span class="mitem"><span class="mlabel">DUE</span><span class="mval" style="color:'+dlc+'">'+esc(t.deadline||'—')+'</span></span>';
+  h+='<span class="msep"></span>';
+  h+='<span class="mitem"><span class="mlabel">EST</span><span class="mval">'+esc(t.estimatedTime||'—')+'</span></span>';
+  h+='<span class="msep"></span>';
+  h+='<span class="mitem"><span class="mlabel">FROM</span><span class="mval">'+esc(t.assignedBy||'—')+'</span></span>';
+
+  h+='</div>';
+  h+='</div>';
+
+  /* Action buttons — keep header clean */
+  h+='<div class="cright">';
+  h+='<button class="qcbtn" data-action="qcomp" title="Mark complete">&#10003;</button>';
+  h+='<button class="schbtn" data-action="cal">&#128197;</button>';
+  h+='<div class="chv" id="chv-'+t.id+'">&#9662;</div>';
+  h+='</div>';
+  h+='</div>';
+
+  /* ── Body ── */
+  h+='<div class="cbody" id="cb-'+t.id+'">';
+
+  /* Context + description in a two-column layout when both present */
+  if(t.meetingContext||t.description){
+    h+='<div class="body-top">';
+    if(t.meetingContext){
+      h+='<div class="cq"><div class="ql">FROM THE MEETING</div><div class="qt">'+esc(t.meetingContext)+'</div></div>';
+    }
+    if(t.description){
+      h+='<div class="body-desc"><div class="sl">WHAT TO DO</div><div class="desc">'+esc(t.description)+'</div></div>';
+    }
+    h+='</div>';
+  }
+
+  if(hasDep){
+    h+='<div class="dep-row"><span class="dep-label">BLOCKED BY</span><span class="dep-val">'+esc(t.dependencies)+'</span></div>';
+  }
+
+  if(steps){
+    h+='<div class="sl" style="margin-top:16px">SUGGESTED APPROACH</div><div class="steps">'+steps+'</div>';
+  }
+
+
+
+  /* Edit panel */
+  h+='<div class="ep"><div class="epg">';
+  h+='<div class="ef"><div class="el">ESTIMATED TIME</div><input class="ei ei-e" value="'+esc(t.estimatedTime||'')+'" placeholder="e.g. 1h 30m"></div>';
+  h+='<div class="ef"><div class="el">DUE DATE</div><input class="ei ei-d" type="date" value="'+esc(t.dueDate||'')+'"></div>';
+  h+='<div class="ef"><div class="el">PRIORITY</div><select class="esel ei-p">'+priOpts+'</select></div>';
+  h+='<div class="ef"><div class="el">ASSIGNED BY</div><input class="ei ei-b" value="'+esc(t.assignedBy||'')+'"></div>';
+  h+='</div>';
+  h+='<div class="epf"><span class="eph">Edit fields then save</span><button class="esb" data-action="save">Save changes</button></div>';
+  h+='</div>';
+
+  /* Complete row — Ask Claude lives here, quietly */
+  h+='<div class="crow">';
+  h+='<span class="tl">Actual time:</span>';
+  h+='<input class="ti ti-act" placeholder="45m">';
+  h+='<a class="askbtn" href="'+claudeUrl+'" target="_blank" onclick="event.stopPropagation()">&#9656; Ask Claude</a>';
+  h+='<button class="calbtn" data-action="cal">&#128197;</button>';
+  h+='<div class="sp"></div>';
+  h+='<button class="cbtn" data-action="comp">&#10003; Mark Complete</button>';
+  h+='</div>';
+  h+='</div></div>';
+  return h;
+}
+
+function renderTasks(){
+  renderStats();renderFilterBar();
+  var tasks=getFiltered();
+  var list=document.getElementById('tlist');
+  if(!tasks.length){
+    list.innerHTML='<div class="empty"><span class="empty-i">&#9672;</span>'+(filt==='all'?'All clear. No outstanding actions.':'No '+filt+' priority tasks.')+'</div>';
+    return;
+  }
+  var html='';for(var i=0;i<tasks.length;i++)html+=buildCard(tasks[i]);
+  list.innerHTML=html;
+}
+
+function togCard(id){
+  var b=document.getElementById('cb-'+id),v=document.getElementById('chv-'+id),c=document.getElementById('card-'+id);
+  if(!b||!v||!c)return;
+  var open=b.classList.toggle('xp');
+  if(open){v.classList.add('xp');c.classList.add('xp');}else{v.classList.remove('xp');c.classList.remove('xp');}
+}
+
+function saveEdits(id){
+  var t=null;for(var i=0;i<A.length;i++){if(A[i].id===id){t=A[i];break;}}if(!t)return;
+  var card=document.getElementById('card-'+id);if(!card)return;
+  var eEl=card.querySelector('.ei-e'),dEl=card.querySelector('.ei-d'),pEl=card.querySelector('.ei-p'),bEl=card.querySelector('.ei-b');
+  if(eEl){t.estimatedTime=eEl.value.trim();t.estimatedMinutes=parseM(eEl.value);}
+  if(dEl){t.dueDate=dEl.value;if(dEl.value){var d=new Date(dEl.value+'T12:00:00');t.deadline=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
+  if(pEl)t.priority=pEl.value;
+  if(bEl)t.assignedBy=bEl.value.trim();
+  markDirty();
+  var wasOpen=card.classList.contains('xp');
+  var tmp=document.createElement('div');tmp.innerHTML=buildCard(t);var fresh=tmp.firstElementChild;
+  if(wasOpen){fresh.classList.add('xp');var fb=fresh.querySelector('.cbody');if(fb)fb.classList.add('xp');var fv=fresh.querySelector('.chv');if(fv)fv.classList.add('xp');}
+  card.replaceWith(fresh);
+  renderStats();renderFilterBar();showToast('Saved');
+}
+
+function quickComplete(id){
+  var idx=-1;for(var i=0;i<A.length;i++){if(A[i].id===id){idx=i;break;}}if(idx===-1)return;
+  var task=JSON.parse(JSON.stringify(A[idx]));
+  task.completedAt=Date.now();task.actualMinutes=null;
+  A.splice(idx,1);C.unshift(task);markDirty();
+  /* Flash the card before removing */
+  var card=document.getElementById('card-'+id);
+  if(card){card.style.transition='opacity .25s';card.style.opacity='0';setTimeout(function(){renderTasks();showToast('Done ✓');},250);}
+  else{renderTasks();showToast('Done ✓');}
+}
+function completeTask(id){
+  var card=document.getElementById('card-'+id);
+  var inp=card?card.querySelector('.ti-act'):null;
+  var mins=inp?parseM(inp.value):null;
+  var idx=-1;for(var i=0;i<A.length;i++){if(A[i].id===id){idx=i;break;}}if(idx===-1)return;
+  var task=JSON.parse(JSON.stringify(A[idx]));
+  task.completedAt=Date.now();task.actualMinutes=mins;
+  if(mins&&task.estimatedMinutes)task.accuracyPct=Math.round(task.estimatedMinutes/mins*100);
+  A.splice(idx,1);C.unshift(task);markDirty();showToast('Task complete \u2713');renderTasks();
+}
+
+function initListeners(){
+  var list=document.getElementById('tlist');if(!list)return;
+  list.addEventListener('click',function(ev){
+    var el=ev.target,action=null,node=el;
+    while(node&&node!==list){if(node.dataset&&node.dataset.action){action=node.dataset.action;break;}node=node.parentElement;}
+    if(!action)return;
+    var cardEl=el;while(cardEl&&!cardEl.dataset.id)cardEl=cardEl.parentElement;if(!cardEl)return;
+    var id=cardEl.dataset.id;
+    if(action==='tog'){if(el.tagName==='BUTTON'||el.tagName==='A'||el.closest('button')||el.closest('a'))return;togCard(id);}
+    else if(action==='qcomp'){ev.stopPropagation();quickComplete(id);}
+    else if(action==='cal'){ev.stopPropagation();openCalModal(id);}
+    else if(action==='save'){ev.stopPropagation();saveEdits(id);}
+    else if(action==='comp'){ev.stopPropagation();completeTask(id);}
+  });
+}
+
+function uncomplete(id){
+  var idx=-1;for(var i=0;i<C.length;i++){if(C[i].id===id){idx=i;break;}}if(idx===-1)return;
+  var task=JSON.parse(JSON.stringify(C[idx]));
+  delete task.completedAt;delete task.actualMinutes;delete task.accuracyPct;
+  C.splice(idx,1);A.push(task);markDirty();
+  renderCompleted();renderTasks();showToast('Moved back to active');
+}
+function renderCompleted(){
+  var list=document.getElementById('clist');
+  if(!C.length){list.innerHTML='<div class="empty"><span class="empty-i">&#10003;</span>No completed tasks yet.</div>';return;}
+  var html='';
+  for(var i=0;i<C.length;i++){
+    var t=C[i];
+    var date=t.completedAt?new Date(t.completedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'—';
+    var acc='';
+    if(t.actualMinutes&&t.estimatedMinutes){
+      var diff=t.actualMinutes-t.estimatedMinutes;
+      var cl=Math.abs(diff)<10?'spot':diff>0?'over':'under';
+      var lb=cl==='spot'?'On target':cl==='over'?'+'+fmtM(diff)+' over':fmtM(Math.abs(diff))+' under';
+      acc='<div class="ta"><div class="tal">ACCURACY</div><div class="tav '+cl+'">'+lb+'</div><div class="tal" style="margin-top:2px">Est '+fmtM(t.estimatedMinutes)+' / Act '+fmtM(t.actualMinutes)+'</div></div>';
+    }
+    html+='<div class="cc"><div class="cck">&#10003;</div><div style="flex:1;min-width:0"><div class="cct">'+esc(t.title)+'</div><div class="ccm">'+date+' &middot; '+esc(t.meetingTitle||'')+'</div></div>'+acc+'<button class="undobtn" onclick="uncomplete(\''+t.id+'\')" title="Move back to active">&#8635;</button></div>';
+  }
+  list.innerHTML=html;
+}
+
+function renderMeetings(){
+  var bm={};
+  for(var i=0;i<A.length;i++){var t=A[i],k=t.meetingTitle||'Unknown';if(!bm[k])bm[k]={n:k,d:t.meetingDate,tasks:[],m:0};bm[k].tasks.push(t);bm[k].m+=parseM(t.estimatedTime||'0');}
+  var ms=[];for(var k in bm)ms.push(bm[k]);ms.sort(function(a,b){return new Date(b.d||0)-new Date(a.d||0);});
+  var list=document.getElementById('mlist');
+  if(!ms.length){list.innerHTML='<div class="empty"><span class="empty-i">&#127897;</span>No meetings.</div>';return;}
+  var html='';
+  for(var mi=0;mi<ms.length;mi++){
+    var mn=ms[mi],cr=0,hi=0,mx=1;
+    for(var i=0;i<mn.tasks.length;i++){if(mn.tasks[i].priority==='critical')cr++;if(mn.tasks[i].priority==='high')hi++;var mm=parseM(mn.tasks[i].estimatedTime||'0');if(mm>mx)mx=mm;}
+    var dt=mn.d?new Date(mn.d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
+    html+='<div class="mc2"><div class="mc2h"><div><div class="mc2n">'+esc(mn.n)+'</div><div class="mc2m">'+dt+' &middot; '+mn.tasks.length+' action'+(mn.tasks.length!==1?'s':'')+' &middot; '+fmtM(mn.m)+' est.</div></div><div class="mc2p">'+(cr?'<span class="pill critical">'+cr+' CRIT</span>':'')+(hi?'<span class="pill high">'+hi+' HIGH</span>':'')+'</div></div>';
+    for(var i=0;i<mn.tasks.length;i++){var t=mn.tasks[i],w=Math.round(parseM(t.estimatedTime||'0')/mx*100);html+='<div class="mr" data-jmp="'+t.id+'"><div class="mrd" style="background:'+PC[t.priority]+'"></div><div class="mrt">'+esc(t.title)+'</div><div class="mrtime">'+esc(t.estimatedTime||'—')+'</div><div class="mrb"><div class="mrf" style="width:'+w+'%"></div></div></div>';}
+    html+='</div>';
+  }
+  list.innerHTML=html;
+  var rows=list.querySelectorAll('[data-jmp]');
+  for(var i=0;i<rows.length;i++){rows[i].addEventListener('click',(function(row){return function(){jumpToTask(row.getAttribute('data-jmp'));};})(rows[i]));}
+}
+
+function jumpToTask(id){
+  go('tasks');
+  setTimeout(function(){
+    var el=document.getElementById('card-'+id);if(!el)return;
+    el.scrollIntoView({behavior:'smooth',block:'center'});
+    var b=document.getElementById('cb-'+id),v=document.getElementById('chv-'+id);
+    if(b&&!b.classList.contains('xp')){b.classList.add('xp');if(v)v.classList.add('xp');el.classList.add('xp');}
+    el.style.transition='box-shadow .3s';el.style.boxShadow='0 0 0 2px rgba(110,86,207,.55)';
+    setTimeout(function(){el.style.boxShadow='';},1800);
+  },80);
+}
+
+function renderAnalytics(){
+  var tot=C.length+A.length;
+  document.getElementById('a1').textContent=tot?Math.round(C.length/tot*100)+'%':'—';
+  var timed=C.filter(function(t){return t.actualMinutes;});
+  document.getElementById('a2').textContent=timed.length?fmtM(timed.reduce(function(s,t){return s+t.actualMinutes;},0)/timed.length):'—';
+  var both=C.filter(function(t){return t.actualMinutes&&t.estimatedMinutes;});
+  document.getElementById('a3').textContent=both.length?Math.round(both.reduce(function(s,t){return s+(t.accuracyPct||0);},0)/both.length)+'%':'—';
+  var meets={};for(var i=0;i<C.length;i++){if(C[i].meetingTitle)meets[C[i].meetingTitle]=1;}for(var i=0;i<A.length;i++){if(A[i].meetingTitle)meets[A[i].meetingTitle]=1;}
+  document.getElementById('a4').textContent=Object.keys(meets).length||'—';
+  var pc={critical:0,high:0,medium:0,low:0};for(var i=0;i<C.length;i++){if(pc[C[i].priority]!==undefined)pc[C[i].priority]++;}
+  drawDonut(pc);
+  var days=14,bk=[];
+  for(var i=0;i<days;i++){var d=new Date();d.setDate(d.getDate()-(days-1-i));bk.push({l:d.toLocaleDateString('en-GB',{weekday:'short'})[0],n:0,ts:new Date(d.setHours(0,0,0,0)).getTime()});}
+  for(var i=0;i<C.length;i++){if(!C[i].completedAt)continue;var d=new Date(C[i].completedAt);d.setHours(0,0,0,0);for(var j=0;j<bk.length;j++){if(bk[j].ts===d.getTime()){bk[j].n++;break;}}}
+  var mx=1;for(var i=0;i<bk.length;i++){if(bk[i].n>mx)mx=bk[i].n;}
+  var vhtml='';for(var i=0;i<bk.length;i++){var hh=Math.round(bk[i].n/mx*64)+4;vhtml+='<div class="bcol"><div class="bbar" style="height:'+hh+'px;background:'+(bk[i].n?'rgba(110,86,207,.48)':'rgba(255,255,255,.04)')+'"></div><div class="bl">'+bk[i].l+'</div></div>';}
+  document.getElementById('vbars').innerHTML=vhtml;
+  var ahtml='';
+  if(both.length){var recent=both.slice(0,10).reverse();for(var i=0;i<recent.length;i++){var p=Math.min(recent[i].accuracyPct||0,150);var col=p>115?'var(--crit)':p<80?'var(--lo)':'var(--ok)';ahtml+='<div class="bcol"><div class="bbar" style="height:'+Math.round(p/150*64+4)+'px;background:'+col+'"></div><div class="bl">'+p+'%</div></div>';}}
+  else ahtml='<div style="color:var(--tx3);font-size:11px;font-family:Geist Mono,monospace;padding:14px 0">No data yet</div>';
+  document.getElementById('abars').innerHTML=ahtml;
+}
+
+function drawDonut(counts){
+  var cv=document.getElementById('donut');if(!cv)return;
+  var ctx=cv.getContext('2d'),col={critical:'#ff4545',high:'#ff9500',medium:'#f5c518',low:'#5ac8fa'},keys=['critical','high','medium','low'];
+  var tot=0;for(var i=0;i<keys.length;i++)tot+=counts[keys[i]]||0;
+  cv.width=cv.height=90;ctx.clearRect(0,0,90,90);
+  if(!tot){ctx.fillStyle='rgba(255,255,255,.05)';ctx.beginPath();ctx.arc(45,45,36,0,Math.PI*2);ctx.fill();}
+  else{var a=-Math.PI/2;for(var i=0;i<keys.length;i++){var v=counts[keys[i]]||0;if(!v)continue;var s=v/tot*Math.PI*2;ctx.beginPath();ctx.moveTo(45,45);ctx.arc(45,45,36,a,a+s);ctx.closePath();ctx.fillStyle=col[keys[i]];ctx.fill();a+=s;}ctx.beginPath();ctx.arc(45,45,20,0,Math.PI*2);ctx.fillStyle='#13141a';ctx.fill();}
+  var lhtml='';for(var i=0;i<keys.length;i++){var v=counts[keys[i]]||0;if(v)lhtml+='<div class="dr"><div class="dd" style="background:'+col[keys[i]]+'"></div><span style="text-transform:capitalize">'+keys[i]+'</span><span style="margin-left:auto;padding-left:10px;font-family:Geist Mono,monospace;color:var(--tx)">'+v+'</span></div>';}
+  document.getElementById('dleg').innerHTML=lhtml;
+}
+
+var _calId=null;
+function openCalModal(id){
+  _calId=id;var t=null;for(var i=0;i<A.length;i++){if(A[i].id===id){t=A[i];break;}}if(!t)return;
+  document.getElementById('cal-ttl').textContent=t.title;
+  document.getElementById('cal-dur').value=t.estimatedTime||'1h';
+  document.getElementById('cal-n').value=t.meetingContext?'Source: '+(t.meetingTitle||'')+'\n\n'+t.meetingContext:'Source: '+(t.meetingTitle||'');
+  var tmr=new Date();tmr.setDate(tmr.getDate()+1);
+  document.getElementById('cal-d').value=tmr.toISOString().split('T')[0];
+  document.getElementById('cal-t').value='09:00';
+  document.getElementById('ov').classList.add('on');
+}
+function closeCal(){document.getElementById('ov').classList.remove('on');_calId=null;}
+function doCalendar(){
+  var t=null;for(var i=0;i<A.length;i++){if(A[i].id===_calId){t=A[i];break;}}if(!t)return;
+  var dv=document.getElementById('cal-d').value,sv=document.getElementById('cal-t').value||'09:00',dur=document.getElementById('cal-dur').value||'1h',nts=document.getElementById('cal-n').value;
+  if(!dv){showToast('Please pick a date');return;}
+  var dm=parseM(dur)||60,st=new Date(dv+'T'+sv+':00'),en=new Date(st.getTime()+dm*60000);
+  function fmtDT(d){return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');}
+  var body=t.description||'';if(nts)body+='\n---\n'+nts;
+  if(t.suggestedApproach&&t.suggestedApproach.length){body+='\nApproach:';for(var i=0;i<t.suggestedApproach.length;i++)body+='\n'+(i+1)+'. '+t.suggestedApproach[i];}
+  window.open('https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('Target: '+t.title)+'&dates='+fmtDT(st)+'/'+fmtDT(en)+'&details='+encodeURIComponent(body)+'&sf=true&output=xml','_blank');
+  closeCal();showToast('Opening Google Calendar...');
+}
+
+function normDeadlines(){
+  var now=new Date(),day=now.getDay();
+  var dtt=((4-day)+7)%7;
+  var thisThur=new Date(now);thisThur.setDate(now.getDate()+dtt);thisThur.setHours(23,59,0,0);
+  var nextThur=new Date(thisThur);nextThur.setDate(thisThur.getDate()+7);
+  var twoWk=new Date(thisThur);twoWk.setDate(thisThur.getDate()+14);
+  function fmt(d){return d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}
+  for(var i=0;i<A.length;i++){
+    var dl=A[i].deadline||'';
+    if(/jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|\d{1,2}[\/\-]\d/i.test(dl))continue;
+    var low=dl.toLowerCase();
+    if(/this week|end of week|by thursday/i.test(low))          A[i].deadline='By '+fmt(thisThur);
+    else if(/next week/i.test(low))                             A[i].deadline='By '+fmt(nextThur);
+    else if(/within.*week|2.{0,5}month|3.{0,5}week/i.test(low))A[i].deadline='By '+fmt(twoWk);
+    else if(/asap/i.test(low))                                  A[i].deadline='ASAP \u2014 by '+fmt(thisThur);
+    else if(/before.*meeting|before.*session/i.test(low))       A[i].deadline=dl+' (by '+fmt(thisThur)+')';
+  }
+}
+
+function parseM(s){if(!s)return 0;s=String(s).toLowerCase().trim();var hm=s.match(/(\d+(?:\.\d+)?)\s*h/),mm=s.match(/(\d+)\s*m/),m=0;if(hm)m+=parseFloat(hm[1])*60;if(mm)m+=parseInt(mm[1]);if(!hm&&!mm){var n=parseFloat(s);if(!isNaN(n))m=n<10?n*60:n;}return m;}
+function fmtM(m){if(!m)return '\u2014';if(m<60)return Math.round(m)+'m';var h=Math.floor(m/60),r=Math.round(m%60);return r?(h+'h '+r+'m'):(h+'h');}
+function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},2400);}
+
+(function(){
+  var hr=new Date().getHours();
+  document.getElementById('greet').textContent=hr<12?'Good morning.':hr<17?'Good afternoon.':'Good evening.';
+  document.getElementById('dline').textContent=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  normDeadlines();
+  initListeners();
+  renderTasks();
+})();
+</script>
+</body>
+</html>
