@@ -677,7 +677,8 @@ function togCard(id){
 function saveEdits(id){
   var t=null;for(var i=0;i<A.length;i++){if(A[i].id===id){t=A[i];break;}}if(!t)return;
   var card=document.getElementById('card-'+id);if(!card)return;
-  var eEl=card.querySelector('.ei-e'),dEl=card.querySelector('.ei-d'),pEl=card.querySelector('.ei-p'),bEl=card.querySelector('.ei-b');
+  var tEl=card.querySelector('.ei-title'),eEl=card.querySelector('.ei-e'),dEl=card.querySelector('.ei-d'),pEl=card.querySelector('.ei-p'),bEl=card.querySelector('.ei-b');
+  if(tEl&&tEl.value.trim())t.title=tEl.value.trim();
   if(eEl){t.estimatedTime=eEl.value.trim();t.estimatedMinutes=parseM(eEl.value);}
   if(dEl){t.dueDate=dEl.value;if(dEl.value){var d=new Date(dEl.value+'T12:00:00');t.deadline=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});}}
   if(pEl)t.priority=pEl.value;
