@@ -631,7 +631,9 @@ function buildCard(t){
 
 
   /* Edit panel */
-  h+='<div class="ep"><div class="epg">';
+  h+='<div class="ep">';
+  h+='<div class="ef" style="grid-column:1/-1;margin-bottom:9px"><div class="el">TITLE</div><input class="ei ei-title" value="'+esc(t.title)+'" style="font-size:12.5px"></div>';
+  h+='<div class="epg">';
   h+='<div class="ef"><div class="el">ESTIMATED TIME</div><input class="ei ei-e" value="'+esc(t.estimatedTime||'')+'" placeholder="e.g. 1h 30m"></div>';
   h+='<div class="ef"><div class="el">DUE DATE</div><input class="ei ei-d" type="date" value="'+esc(t.dueDate||'')+'"></div>';
   h+='<div class="ef"><div class="el">PRIORITY</div><select class="esel ei-p">'+priOpts+'</select></div>';
