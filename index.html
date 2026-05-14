@@ -59,7 +59,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .sc-s{font-size:10px;color:var(--tx3);margin-top:3px}
 
 /* Filter bar */
-.fb{display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+
 .fc{padding:4px 10px;border-radius:18px;font-size:9.5px;font-family:"Geist Mono",monospace;cursor:pointer;
   border:1px solid var(--bd);color:var(--tx2);background:transparent;transition:all .15s;user-select:none;
   display:flex;align-items:center;gap:4px}
@@ -432,11 +432,9 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   .toast { bottom: 66px; right: 12px; left: 12px; max-width: none; text-align: center; }
 
   /* ── Filter bar scrollable, sort static ── */
-  .fb { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; max-width: calc(100% - 90px); }
-  .fb::-webkit-scrollbar { display: none; }
+  .fb { flex-wrap: nowrap !important; overflow-x: auto; }
   .fc { flex-shrink: 0; }
-  #sort-wrap { position: absolute; right: 14px; top: auto; }
-  .fb + #sort-wrap { position: static; margin-left: 8px; flex-shrink: 0; }
+  #sort-wrap { flex-shrink: 0; }
 
   /* ── Completed accuracy hidden on mobile (too cramped) ── */
   .ta { display: none; }
@@ -445,6 +443,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .exportbtn{flex:1;padding:6px;border-radius:5px;cursor:pointer;font-size:9px;font-family:"Geist Mono",monospace;border:1px solid var(--bd);background:transparent;color:var(--tx3);transition:all .15s}.exportbtn:hover{border-color:var(--bd2);color:var(--tx2)}
 .newtaskbtn{width:100%;padding:8px;border-radius:6px;cursor:pointer;font-size:10px;font-family:"Geist Mono",monospace;font-weight:600;letter-spacing:.3px;border:1px solid rgba(110,86,207,.35);background:rgba(110,86,207,.1);color:rgba(110,86,207,.9);transition:all .15s;margin-bottom:10px;display:block}
 .newtaskbtn:hover{background:rgba(110,86,207,.2);border-color:rgba(110,86,207,.5)}
+.fb-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;min-width:0}
+.fb{flex:1;min-width:0;display:flex;gap:5px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px;margin-bottom:0}
+.fb::-webkit-scrollbar{display:none}
+#sort-wrap{flex-shrink:0}
 </style>
 </head>
 <body>
@@ -482,7 +484,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <div class="sc"><div class="sc-l">EST. TO CLEAR</div><div class="sc-v" id="s3" style="color:var(--ac)">&#8212;</div><div class="sc-s">all tasks</div></div>
       <div class="sc"><div class="sc-l">DONE THIS WEEK</div><div class="sc-v" id="s4" style="color:var(--ok)">&#8212;</div><div class="sc-s">completed</div></div>
     </div>
-    <div class="fb" id="fb"></div>
+    <div class="fb-row"><div class="fb" id="fb"></div><div id="sort-wrap"></div></div>
     <div id="tlist"></div>
   </div>
   <div class="view" id="view-completed">
@@ -669,8 +671,7 @@ function renderFilterBar(){
   if(cnt.wip>0||filt==='wip')makeChip('In Progress','wip',cnt.wip,'#a78bfa');
   /* Sort select rendered separately — static, not in scrollable fb */
   var sortWrap=document.getElementById('sort-wrap');
-  if(!sortWrap){sortWrap=document.createElement('div');sortWrap.id='sort-wrap';sortWrap.style.cssText='flex-shrink:0;margin-left:auto';fb.parentNode.insertBefore(sortWrap,fb.nextSibling);}
-  sortWrap.innerHTML='';
+  if(sortWrap)sortWrap.innerHTML='';
   var sel=document.createElement('select');sel.className='fso';
   var opts=[['priority','Priority'],['time','Est. Time'],['deadline','Deadline'],['date','Meeting Date']];
   for(var i=0;i<opts.length;i++){
