@@ -1195,16 +1195,14 @@ function importState(){
   normDeadlines();
   initListeners();
   if(!localStorage.getItem('gh_token')){
-    var t=prompt('Enter your GitHub token to enable cross-device sync (stored locally only):');
-    if(t){localStorage.setItem('gh_token',t.trim());GH_TOKEN=t.trim();}
+    var tok=prompt('Enter your GitHub token to enable cross-device sync (stored locally only):');
+    if(tok){localStorage.setItem('gh_token',tok.trim());GH_TOKEN=tok.trim();}
   }
   loadFromGitHub(function(){
     normDeadlines();
     renderTasks();
   });
-
-})();
-</script>
+})();</script>
 
 <button class="newtaskbtn-fab" onclick="openNewTask()" title="New Task" style="display:none">+</button>
 </body>
