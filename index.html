@@ -295,76 +295,80 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .card.wip .cpb{background:linear-gradient(180deg,var(--ac),#a78bfa) !important}
 .cmt .pill{margin-right:8px}
 
+
+
 /* ═══════════════════════════════════════════════════════════════════
-   MOBILE STYLES — @media max-width:768px
+   MOBILE STYLES — @media max-width:900px
    To revert: remove everything between these comment markers
    Desktop styles above are completely untouched
 ═══════════════════════════════════════════════════════════════════ */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
 
-  /* ── Layout: sidebar becomes bottom nav ── */
-  .shell { flex-direction: column; padding-bottom: 64px; }
+  /* ── Kill the sidebar entirely, bottom nav replaces it ── */
+  .shell { flex-direction: column; padding-bottom: 0; }
 
   .sb {
-    width: 100%;
-    height: 60px;
-    flex-direction: row;
-    align-items: center;
-    padding: 0;
-    position: fixed;
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    border-right: none;
-    border-top: 1px solid var(--bd);
+    width: 100% !important;
+    height: 56px !important;
+    min-height: 56px;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 0 !important;
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    border-right: none !important;
+    border-top: 1px solid var(--bd) !important;
     z-index: 100;
-    overflow: visible;
+    overflow: visible !important;
   }
 
-  /* Hide logo, section labels, new task button, save indicator in bottom nav */
-  .logo, .ns, .sbf { display: none; }
+  /* Hide everything in sidebar except nav items */
+  .logo, .ns, .sbf { display: none !important; }
 
-  /* Nav items become bottom tab buttons */
+  /* Nav items = bottom tabs */
   .ni {
-    flex: 1;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 4px;
-    gap: 3px;
-    border-left: none;
+    flex: 1 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 6px 2px !important;
+    gap: 2px !important;
+    border-left: none !important;
     border-top: 2px solid transparent;
-    font-size: 9px;
-    letter-spacing: .3px;
+    font-size: 9px !important;
+    height: 56px;
+    position: relative;
   }
   .ni.on {
-    border-left: none;
-    border-top-color: var(--ac);
-    background: rgba(110,86,207,.08);
+    border-left: none !important;
+    border-top: 2px solid var(--ac) !important;
+    background: rgba(110,86,207,.08) !important;
   }
-  .ni-icon { font-size: 16px; width: auto; }
-  .ni-lbl { font-size: 9px; }
+  .ni-icon { font-size: 18px !important; width: auto !important; }
+  .ni-lbl { font-size: 9px !important; letter-spacing: 0; }
   .nb {
-    position: absolute;
-    top: 4px;
-    right: calc(50% - 18px);
-    font-size: 7px;
-    padding: 1px 4px;
+    position: absolute !important;
+    top: 4px !important;
+    right: 8px !important;
+    font-size: 7px !important;
+    padding: 1px 4px !important;
   }
 
-  /* Main content fills full width */
+  /* Main content: full width, padding above bottom nav */
   .mn {
-    margin-left: 0;
-    padding: 16px 14px 80px;
-    max-width: 100%;
+    margin-left: 0 !important;
+    padding: 16px 14px 76px !important;
+    max-width: 100% !important;
   }
 
   /* ── Header ── */
   .ph-t { font-size: 22px; }
   .ph-s { font-size: 11px; }
 
-  /* ── Stats strip: 2x2 grid ── */
+  /* ── Stats: 2x2 ── */
   .stats { grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 14px; }
   .sc { padding: 11px 12px; }
   .sc-v { font-size: 20px; }
@@ -375,83 +379,59 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   .fso { font-size: 9px; padding: 4px 6px; }
 
   /* ── Cards ── */
-  .card { border-radius: 10px; margin-bottom: 6px; }
   .ch { padding: 11px 12px; gap: 8px; }
-  .ct { font-size: 13px; margin-bottom: 5px; }
-
-  /* Metadata: show only pill + DUE on collapsed card */
-  .cmt { gap: 0; }
-  .mitem { margin-right: 8px; }
-  /* Hide EST, FROM, MTG on mobile header — show in expanded body */
+  .ct { font-size: 13px; margin-bottom: 4px; }
   .mitem:not(:first-child):not(:nth-child(2)) { display: none; }
   .msep { display: none; }
-
-  /* Action buttons — tighter */
   .cright { gap: 4px; }
   .wipbtn, .qcbtn, .schbtn { padding: 4px 6px; font-size: 11px; }
-  .chv { width: 11px; font-size: 8px; }
 
-  /* ── Expanded card body ── */
+  /* ── Expanded body ── */
   .cbody { padding: 0 12px 14px; }
-
-  /* Two-column context → single column */
   .body-top { grid-template-columns: 1fr; gap: 10px; }
-
-  /* Edit panel → single column */
   .epg { grid-template-columns: 1fr; }
-  .ep { padding: 10px 11px; }
-
-  /* Complete row — stack on two lines */
   .crow { flex-wrap: wrap; gap: 6px; }
-  .cbtn { width: 100%; justify-content: center; order: 1; }
-  .askbtn { flex: 1; font-size: 9px; padding: 5px 8px; }
-  .calbtn { font-size: 9px; padding: 5px 8px; }
+  .cbtn { width: 100%; justify-content: center; order: 10; }
   .sp { display: none; }
-
-  /* ── Completed view ── */
-  .cc { padding: 10px 12px; }
-  .ta { display: none; } /* hide accuracy on mobile — too cramped */
 
   /* ── Analytics ── */
   .ag { grid-template-columns: 1fr; }
   .ac.w { grid-column: 1; }
 
   /* ── By Meeting ── */
-  .mc2 { padding: 12px; }
   .mc2h { flex-direction: column; gap: 6px; }
 
   /* ── Modals ── */
-  .modal { width: 95vw !important; padding: 18px; border-radius: 12px; }
+  .modal { width: 95vw !important; padding: 16px; }
   .mg { grid-template-columns: 1fr; }
 
-  /* ── New task button — floating action button on mobile ── */
+  /* ── FAB for new task ── */
   .newtaskbtn-fab {
     display: flex !important;
     position: fixed;
-    bottom: 70px;
-    right: 16px;
-    width: 48px;
-    height: 48px;
+    bottom: 66px;
+    right: 14px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     background: var(--ac);
     border: none;
     color: #fff;
-    font-size: 22px;
+    font-size: 24px;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     box-shadow: 0 4px 16px rgba(110,86,207,.4);
     z-index: 99;
-    transition: transform .15s, box-shadow .15s;
+    transition: transform .15s;
+    line-height: 1;
   }
-  .newtaskbtn-fab:hover { transform: scale(1.07); box-shadow: 0 6px 20px rgba(110,86,207,.5); }
-  .newtaskbtn { display: none; } /* hide sidebar button on mobile */
+  .newtaskbtn { display: none !important; }
 
   /* ── Toast ── */
-  .toast { bottom: 70px; right: 12px; left: 12px; max-width: none; text-align: center; }
+  .toast { bottom: 66px; right: 12px; left: 12px; max-width: none; text-align: center; }
 }
 /* END MOBILE STYLES */
-
 </style>
 </head>
 <body>
