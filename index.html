@@ -722,6 +722,13 @@ function buildCard(t){
   var isOverdue=/(overdue)/i.test(t.deadline||'');
   var isUrgent=/(today|asap)/i.test(t.deadline||'');
   var dlc=isOverdue?'var(--crit)':isUrgent?'var(--hi)':'var(--tx2)';
+  var _now2=new Date();_now2.setHours(0,0,0,0);
+  var _tom2=new Date(_now2);_tom2.setDate(_tom2.getDate()+1);
+  var _due2=t.dueDate?new Date(t.dueDate+'T00:00:00'):null;
+  var isDueToday2=_due2&&_due2.getTime()===_now2.getTime();
+  var isDueTomorrow2=_due2&&_due2.getTime()===_tom2.getTime();
+  var isPast2=_due2&&_due2.getTime()<_now2.getTime();
+  var dlBg=isOverdue||isPast2||isDueToday2?'rgba(255,69,69,.12)':isDueTomorrow2||isUrgent?'rgba(255,149,0,.09)':'';
   var steps='';
   var sa=t.suggestedApproach||[];
   for(var i=0;i<sa.length;i++)steps+='<div class="step"><div class="snum">'+(i+1)+'</div><div class="stxt">'+esc(sa[i])+'</div></div>';
