@@ -619,18 +619,15 @@ function getFiltered(){
       /* Overdue/ASAP first, then by date, undated last */
       function rank(task){
         var dl=task.deadline||'';
+        if(!dl)return 9999999999999;
         if(/overdue/i.test(dl))return 0;
         if(/asap/i.test(dl))return 1;
-        /* Use explicit dueDate if set */
         if(task.dueDate){var d=new Date(task.dueDate+'T12:00:00');if(!isNaN(d.getTime()))return d.getTime();}
-        /* Extract date from parentheses e.g. "(by Thu 14 May)" or "(~end June 2026)" */
+        var clean=dl.replace(/^(by|before|until|due)[:\s]+/i,'').replace(/^(mon|tue|wed|thu|fri|sat|sun)\s+/i,'').trim();
+        var d2=new Date(clean);if(!isNaN(d2.getTime()))return d2.getTime();
+        var d3=new Date(clean+' 2026');if(!isNaN(d3.getTime()))return d3.getTime();
         var paren=dl.match(/\((?:by\s+|~end\s+)?([^)]+)\)/i);
-        if(paren){var d2=new Date(paren[1]+' 2026');if(!isNaN(d2.getTime()))return d2.getTime();}
-        /* Try parsing the whole string */
-        var d3=new Date(dl);if(!isNaN(d3.getTime()))return d3.getTime();
-        /* Contains a month name */
-        var months=/jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i;
-        if(months.test(dl)){var d4=new Date(dl.replace(/by\s+|before\s+\w+\s+meeting\s*/i,''));if(!isNaN(d4.getTime()))return d4.getTime();}
+        if(paren){var p2=paren[1].replace(/^(mon|tue|wed|thu|fri|sat|sun)\s+/i,'');var d4=new Date(p2+' 2026');if(!isNaN(d4.getTime()))return d4.getTime();}
         return 9999999999999;
       }
       return rank(a)-rank(b);
