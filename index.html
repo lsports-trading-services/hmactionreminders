@@ -739,9 +739,7 @@ function buildCard(t){
   h+='<div class="cmt">';
   if(t.status==='wip')h+='<span class="pill wip">⏳ IN PROGRESS</span>';
   h+='<span class="pill '+t.priority+'"><span class="pd" style="background:'+pc+'"></span>'+(t.priority||'').toUpperCase()+'</span>';
-  h+='<span class="mitem"><span class="mlabel">DUE</span><span class="mval" style="color:'+dlc+'">'+esc(t.deadline||'—')+'</span></span>';
-  h+='<span class="msep"></span>';
-  h+='<span class="mitem"><span class="mlabel">EST</span><span class="mval">'+esc(t.estimatedTime||'—')+'</span></span>';
+    h+='<span class="mitem"><span class="mlabel">DUE</span><span class="mval" style="color:'+dlc+';'+(dlBg?'background:'+dlBg+';padding:1px 5px;border-radius:3px;':'')+'">'+esc(t.deadline||'—')+'</span></span>';
   h+='<span class="msep"></span>';
   h+='<span class="mitem"><span class="mlabel">FROM</span><span class="mval">'+esc(t.assignedBy||'—')+'</span></span>';
 
