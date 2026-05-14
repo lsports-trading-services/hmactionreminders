@@ -430,6 +430,14 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 
   /* ── Toast ── */
   .toast { bottom: 66px; right: 12px; left: 12px; max-width: none; text-align: center; }
+
+  /* ── Filter bar scrollable ── */
+  .fb { flex-wrap: nowrap !important; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 4px; }
+  .fb::-webkit-scrollbar { display: none; }
+  .fc, .fso { flex-shrink: 0; }
+
+  /* ── Completed accuracy hidden on mobile (too cramped) ── */
+  .ta { display: none; }
 }
 /* END MOBILE STYLES */
 </style>
@@ -698,7 +706,7 @@ function buildCard(t){
 
   /* Metadata row — clean label+value pairs, no emoji clutter */
   h+='<div class="cmt">';
-  if(t.status==='wip')h+='<span class="pill wip">&#8987; IN PROGRESS</span>';
+  if(t.status==='wip')h+='<span class="pill wip">⏳ IN PROGRESS</span>';
   h+='<span class="pill '+t.priority+'"><span class="pd" style="background:'+pc+'"></span>'+(t.priority||'').toUpperCase()+'</span>';
   h+='<span class="mitem"><span class="mlabel">DUE</span><span class="mval" style="color:'+dlc+'">'+esc(t.deadline||'—')+'</span></span>';
   h+='<span class="msep"></span>';
@@ -713,7 +721,7 @@ function buildCard(t){
   h+='<div class="cright">';
   var _wc=t.status==='wip'?' on':'';
   var _wt=t.status==='wip'?'In progress — click to clear':'Mark as in progress';
-  h+='<button class="wipbtn'+_wc+'" data-action="wip" title="'+_wt+'">&#8987;</button>';
+  h+='<button class="wipbtn'+_wc+'" data-action="wip" title="'+_wt+'">⏳</button>';
   h+='<button class="qcbtn" data-action="qcomp" title="Mark complete">&#10003;</button>';
   h+='<button class="schbtn" data-action="cal">&#128197;</button>';
   h+='<div class="chv" id="chv-'+t.id+'">&#9662;</div>';
