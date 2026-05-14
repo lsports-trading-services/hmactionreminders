@@ -1096,6 +1096,53 @@ function openNewTask(){
   setTimeout(function(){document.getElementById('nt-title').focus();},100);
 }
 
+function showClaudePrompt(id){
+  var t=null;for(var i=0;i<A.length;i++){if(A[i].id===id){t=A[i];break;}}
+  if(!t)return;
+  var url=buildClaudeUrl(t);
+  /* Try to detect if running as installed PWA */
+  var isPwa=window.navigator.standalone||window.matchMedia('(display-mode: standalone)').matches;
+  if(isPwa){
+    /* In PWA mode: show the prompt text so user can copy + open Claude separately */
+    var ctx=decodeURIComponent(url.split('?q=')[1]||'');
+    var modal=document.createElement('div');
+    modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;display:flex;align-items:flex-end;padding:0';
+    var sheet=document.createElement('div');
+    sheet.style.cssText='background:var(--sf);border-radius:16px 16px 0 0;width:100%;padding:20px;max-height:80vh;display:flex;flex-direction:column;gap:12px';
+    var title=document.createElement('div');
+    title.style.cssText='font-family:"Instrument Serif",serif;font-size:17px;color:var(--tx)';
+    title.textContent='Ask Claude';
+    var hint=document.createElement('div');
+    hint.style.cssText='font-size:11px;color:var(--tx2)';
+    hint.textContent='Copy this prompt, then open Claude and paste it.';
+    var ta=document.createElement('textarea');
+    ta.value=ctx;
+    ta.style.cssText='background:var(--sf2);border:1px solid var(--bd);color:var(--tx);border-radius:8px;padding:10px;font-size:11px;font-family:"Geist Mono",monospace;flex:1;min-height:120px;resize:none;line-height:1.5';
+    ta.readOnly=true;
+    var row=document.createElement('div');
+    row.style.cssText='display:flex;gap:8px';
+    var copyBtn=document.createElement('button');
+    copyBtn.style.cssText='flex:1;padding:12px;border-radius:8px;border:1px solid rgba(110,86,207,.4);background:rgba(110,86,207,.16);color:rgba(110,86,207,.95);font-family:"Geist Mono",monospace;font-size:11px;font-weight:600;cursor:pointer';
+    copyBtn.textContent='Copy prompt';
+    copyBtn.onclick=function(){
+      navigator.clipboard.writeText(ctx).catch(function(){ta.select();document.execCommand('copy');});
+      copyBtn.textContent='Copied!';
+      setTimeout(function(){document.body.removeChild(modal);},800);
+    };
+    var closeBtn=document.createElement('button');
+    closeBtn.style.cssText='padding:12px 16px;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-family:"Geist Mono",monospace;font-size:11px;cursor:pointer';
+    closeBtn.textContent='Close';
+    closeBtn.onclick=function(){document.body.removeChild(modal);};
+    row.appendChild(copyBtn);row.appendChild(closeBtn);
+    sheet.appendChild(title);sheet.appendChild(hint);sheet.appendChild(ta);sheet.appendChild(row);
+    modal.appendChild(sheet);
+    document.body.appendChild(modal);
+    setTimeout(function(){ta.select();},100);
+  } else {
+    window.open(url,'_blank');
+  }
+}
+
 function closeNewTask(){document.getElementById('nt-ov').classList.remove('on');}
 function submitNewTask(){
   var title=document.getElementById('nt-title').value.trim();
