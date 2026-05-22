@@ -547,6 +547,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 /* ── v4: Slightly more breathing room when sections are used ── */
 .tlist{padding-bottom:80px}
 .tlist .card{margin-bottom:8px}
+.pbmenu-label{font-size:9px;font-weight:600;letter-spacing:1.2px;color:var(--tx3);font-family:"Geist Mono",monospace;padding:6px 10px 4px;border-bottom:1px solid var(--bd);margin-bottom:3px}
 </style>
 </head>
 <body>
@@ -871,7 +872,7 @@ function buildCard(t){
   h+='<button class="wipbtn'+_wc+'" data-action="wip" title="'+_wt+'">⏳</button>';
   h+='<button class="qcbtn" data-action="qcomp" title="Mark complete">&#10003;</button>';
   h+='<button class="schbtn" data-action="cal">&#128197;</button>';
-  h+='<button class="snoozebtn" data-action="snooze" title="Snooze">&#128564;</button>';
+  h+='<button class="snoozebtn" data-action="snooze" title="Push back">&#10145;</button>';
   h+='<div class="chv" id="chv-'+t.id+'">&#9662;</div>';
   h+='</div>';
   h+='</div>';
@@ -1364,35 +1365,77 @@ function inferStream(t){
 
 /* Snooze helpers */
 var CURRENT_SNOOZE_ID=null;
-function snoozeTask(id, days){
-  var t=null;for(var i=0;i<A.length;i++){if(A[i].id===id){t=A[i];break;}}
-  if(!t)return;
-  if(days===0){
-    delete t.snoozedUntil;
-    markDirty();renderTasks();showToast('Unsnoozed');
-  } else {
-    var d=new Date();d.setDate(d.getDate()+days);d.setHours(9,0,0,0);
-    t.snoozedUntil=d.toISOString();
-    markDirty();renderTasks();showToast('Snoozed '+days+' day'+(days>1?'s':''));
+/* Push-back: moves task's due date forward to a sensible target */
+function computePushBackDate(target){
+  var d=new Date();d.setHours(0,0,0,0);
+  if(target==='tomorrow'){
+    d.setDate(d.getDate()+1);
+    return d;
   }
+  if(target==='thisweek'){
+    /* End of this week = upcoming Thursday (Israel weekend starts Friday).
+       If today IS Thursday or later, push to NEXT Thursday. */
+    var dow=d.getDay(); /* 0=Sun, 4=Thu */
+    var daysToThu=(4-dow+7)%7;
+    if(daysToThu===0)daysToThu=7; /* if today is Thu, push to next */
+    d.setDate(d.getDate()+daysToThu);
+    return d;
+  }
+  if(target==='nextweek'){
+    /* End of next week = Thursday after the upcoming one */
+    var dow2=d.getDay();
+    var daysToThu2=(4-dow2+7)%7;
+    if(daysToThu2===0)daysToThu2=7;
+    d.setDate(d.getDate()+daysToThu2+7);
+    return d;
+  }
+  if(target==='nextmonth'){
+    /* End of next month = last day of next month */
+    d.setMonth(d.getMonth()+2);
+    d.setDate(0); /* sets to last day of previous month, i.e. end of next month */
+    return d;
+  }
+  return null;
+}
+function handlePushBack(target){
+  if(!CURRENT_SNOOZE_ID){hideSnoozeMenu();return;}
+  pushBackTask(CURRENT_SNOOZE_ID, target);
+}
+function pushBackTask(id, target){
+  var t=null;for(var i=0;i<A.length;i++){if(A[i].id===id){t=A[i];break;}}
+  if(!t){hideSnoozeMenu();return;}
+  var d=computePushBackDate(target);
+  if(!d){hideSnoozeMenu();return;}
+  /* Update both dueDate (ISO yyyy-mm-dd) and the human-readable deadline */
+  var pad=function(n){return n<10?'0'+n:n;};
+  t.dueDate=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  t.deadline=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  markDirty();renderTasks();
+  var label={tomorrow:'tomorrow','thisweek':'end of week','nextweek':'end of next week','nextmonth':'end of next month'}[target]||'later';
+  showToast('Pushed to '+label);
   hideSnoozeMenu();
+}
+/* Back-compat shims — old snooze concept now means "push back to nextweek" */
+function snoozeTask(id, days){
+  /* Convert old days into best push-back target */
+  if(days===0){pushBackTask(id,'tomorrow');return;}
+  if(days<=3){pushBackTask(id,'thisweek');return;}
+  if(days<=10){pushBackTask(id,'nextweek');return;}
+  pushBackTask(id,'nextmonth');
 }
 function unsnooze(id){
   var t=null;for(var i=0;i<A.length;i++){if(A[i].id===id){t=A[i];break;}}
   if(!t)return;
   delete t.snoozedUntil;
-  markDirty();renderTasks();showToast('Unsnoozed');
+  markDirty();renderTasks();
 }
 function isSnoozed(t){
+  /* Legacy: tasks marked snoozedUntil from earlier patches still render faded.
+     New push-back doesn't set this. We keep the bucket but it'll usually be empty. */
   if(!t.snoozedUntil)return false;
   return new Date(t.snoozedUntil).getTime() > Date.now();
 }
 var SNOOZE_DISMISS_HANDLER=null;
-
-function handleSnoozeClick(days){
-  if(!CURRENT_SNOOZE_ID){hideSnoozeMenu();return;}
-  snoozeTask(CURRENT_SNOOZE_ID, days);
-}
 
 function showSnoozeMenu(id, btn){
   hideSnoozeMenu();
@@ -1588,13 +1631,13 @@ function initGlobalShortcuts(){
 <button class="newtaskbtn-fab" onclick="openNewTask()" title="New Task" style="display:none">+</button>
 
 
-<!-- v4: Single snooze menu, positioned dynamically -->
+<!-- v4: Push back menu -->
 <div class="snoozemenu" id="snooze-menu" onclick="event.stopPropagation()">
-  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handleSnoozeClick(3)">3 days</button>
-  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handleSnoozeClick(7)">Next week</button>
-  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handleSnoozeClick(14)">2 weeks</button>
-  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handleSnoozeClick(30)">Next month</button>
-  <button type="button" class="snoozemenu-unsnooze" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handleSnoozeClick(0)">Unsnooze</button>
+  <div class="pbmenu-label">PUSH BACK TO</div>
+  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handlePushBack('tomorrow')">Tomorrow</button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handlePushBack('thisweek')">End of this week</button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handlePushBack('nextweek')">End of next week</button>
+  <button type="button" onmousedown="event.preventDefault()" onclick="event.stopPropagation();handlePushBack('nextmonth')">End of next month</button>
 </div>
 
 <!-- v4: Search overlay (Cmd+K / press / to open) -->
