@@ -444,6 +444,37 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   /* ── Completed accuracy hidden on mobile (too cramped) ── */
   .ta { display: none; }
   .ei[type=date], .mfi[type=date] { width: 100% !important; max-width: 100% !important; }
+
+  /* ── v4 mobile overrides ── */
+  /* Section headers: tighter spacing, slightly smaller */
+  .sec { margin: 12px 0 4px; }
+  .sec-h { font-size: 10px; letter-spacing: 1.2px; }
+  .sec-count { font-size: 9px; padding: 1px 6px; }
+
+  /* Stream tag: shrink on cramped mobile cards */
+  .stream-tag { font-size: 8px; padding: 1px 5px; margin-right: 5px; }
+  .snooze-badge { font-size: 8px; padding: 1px 5px; margin-right: 5px; }
+
+  /* Snooze button: bigger touch target (44px is iOS guideline) */
+  .snoozebtn { width: 34px; height: 30px; font-size: 14px; }
+
+  /* Snooze menu: bigger touch targets, sized for mobile */
+  .snoozemenu { min-width: 170px; padding: 6px; border-radius: 10px; }
+  .snoozemenu button { padding: 12px 14px; font-size: 12px; }
+
+  /* Search overlay: full-width on mobile, top-aligned to use full screen */
+  .search-overlay { padding-top: 60px; padding-left: 12px; padding-right: 12px; align-items: flex-start; }
+  .search-box { width: 100%; max-width: none; border-radius: 12px; }
+  .search-input { padding: 14px 16px; font-size: 15px; }
+  .search-result { padding: 13px 16px; }
+  .search-result-title { font-size: 14px; }
+  .search-result-meta { font-size: 10px; }
+  .search-hint { font-size: 9px; padding: 8px 14px; gap: 10px; flex-wrap: wrap; }
+
+  /* Empty state: less giant padding */
+  .empty-state { padding: 40px 16px; }
+  .empty-state-icon { font-size: 28px; }
+  .empty-state-msg { font-size: 13px; }
 }
 /* END MOBILE STYLES */
 .exportbtn{flex:1;padding:6px;border-radius:5px;cursor:pointer;font-size:9px;font-family:"Geist Mono",monospace;border:1px solid var(--bd);background:transparent;color:var(--tx3);transition:all .15s}.exportbtn:hover{border-color:var(--bd2);color:var(--tx2)}
