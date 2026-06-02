@@ -475,6 +475,15 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   .empty-state { padding: 40px 16px; }
   .empty-state-icon { font-size: 28px; }
   .empty-state-msg { font-size: 13px; }
+
+  /* ── v4: Timeline mobile overrides ── */
+  .tl-month { font-size: 20px; margin: 22px 0 10px; }
+  .tl-row { gap: 10px; padding: 9px 8px; }
+  .tl-date { width: 64px; font-size: 10px; }
+  .tl-title { font-size: 12.5px; }
+  .tl-prio, .tl-wip-badge { font-size: 7px; padding: 1px 5px; }
+  .tl-from { font-size: 9px; }
+  .tl-today-label { font-size: 9px; padding: 3px 8px; margin-left: 0; }
 }
 /* END MOBILE STYLES */
 .exportbtn{flex:1;padding:6px;border-radius:5px;cursor:pointer;font-size:9px;font-family:"Geist Mono",monospace;border:1px solid var(--bd);background:transparent;color:var(--tx3);transition:all .15s}.exportbtn:hover{border-color:var(--bd2);color:var(--tx2)}
@@ -548,6 +557,34 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .tlist{padding-bottom:80px}
 .tlist .card{margin-bottom:8px}
 .pbmenu-label{font-size:9px;font-weight:600;letter-spacing:1.2px;color:var(--tx3);font-family:"Geist Mono",monospace;padding:6px 10px 4px;border-bottom:1px solid var(--bd);margin-bottom:3px}
+
+/* ── v4: Timeline view ── */
+.tl-wrap{padding:8px 0 40px;max-width:760px}
+.tl-month{font-family:"Instrument Serif",serif;font-size:24px;color:var(--tx);margin:28px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--bd2)}
+.tl-month:first-child{margin-top:6px}
+.tl-today{position:relative;margin:18px 0 14px;padding:6px 0;border-top:1px dashed rgba(255,69,69,.45);border-bottom:1px dashed rgba(255,69,69,.45)}
+.tl-today-label{display:inline-block;background:rgba(255,69,69,.14);color:#ff6868;font-size:10px;font-weight:600;letter-spacing:1.5px;font-family:"Geist Mono",monospace;padding:4px 10px;border-radius:4px;margin-left:10px}
+.tl-row{display:flex;align-items:flex-start;gap:14px;padding:10px 12px;margin-bottom:4px;border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent}
+.tl-row:hover{background:rgba(110,86,207,.06);border-color:var(--bd)}
+.tl-row.overdue{opacity:.55}
+.tl-row.is-today{background:rgba(255,69,69,.05);border-color:rgba(255,69,69,.15)}
+.tl-row.is-today:hover{background:rgba(255,69,69,.09)}
+.tl-row.wip{background:rgba(167,139,250,.05);border-color:rgba(167,139,250,.18)}
+.tl-row.wip:hover{background:rgba(167,139,250,.09)}
+.tl-row.no-date{opacity:.7}
+.tl-date{flex-shrink:0;width:90px;font-family:"Geist Mono",monospace;font-size:11px;color:var(--tx2);padding-top:2px}
+.tl-row.is-today .tl-date{color:#ff6868;font-weight:600}
+.tl-dot{flex-shrink:0;width:8px;height:8px;border-radius:50%;margin-top:6px}
+.tl-body{flex:1;min-width:0}
+.tl-title{font-size:13px;color:var(--tx);margin-bottom:5px;line-height:1.4}
+.tl-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tl-prio{font-size:8px;font-weight:600;letter-spacing:1px;font-family:"Geist Mono",monospace;padding:2px 6px;border-radius:3px}
+.tl-prio-critical{background:rgba(255,69,69,.15);color:#ff6868}
+.tl-prio-high{background:rgba(255,149,0,.13);color:#ffa64d}
+.tl-prio-medium{background:rgba(245,197,24,.12);color:#f5c518}
+.tl-prio-low{background:rgba(90,200,250,.12);color:#5ac8fa}
+.tl-wip-badge{font-size:8px;font-weight:600;letter-spacing:1px;font-family:"Geist Mono",monospace;color:#a78bfa;background:rgba(167,139,250,.14);padding:2px 6px;border-radius:3px}
+.tl-from{font-size:10px;color:var(--tx3);font-family:"Geist Mono",monospace}
 </style>
 </head>
 <body>
@@ -570,6 +607,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   <div class="ni" id="ni-completed" onclick="go('completed')"><span class="ni-icon">&#10003;</span><span class="ni-lbl">Completed</span><span class="nb ok" id="cbadge" style="display:none">0</span></div>
   <div class="ns" style="margin-top:6px">INSIGHTS</div>
   <div class="ni" id="ni-analytics" onclick="go('analytics')"><span class="ni-icon">&#9678;</span><span class="ni-lbl">Analytics</span></div>
+  <div class="ni" id="ni-timeline" onclick="go('timeline')"><span class="ni-icon">&#9776;</span><span class="ni-lbl">Timeline</span></div>
   <div class="ni" id="ni-meetings" onclick="go('meetings')"><span class="ni-icon">&#127897;</span><span class="ni-lbl">By Meeting</span></div>
   <div class="sbf">
     <button class="newtaskbtn" onclick="openNewTask()">+ New Task</button>
@@ -605,6 +643,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
       <div class="ac"><div class="at">ESTIMATION ACCURACY TREND</div><div class="bc" id="abars"></div></div>
       <div class="ac w"><div class="at">COMPLETIONS - LAST 14 DAYS</div><div class="bc" id="vbars"></div></div>
     </div>
+  </div>
+  <div class="view" id="view-timeline">
+    <div class="ph"><div class="ph-t">Timeline</div><div class="ph-s">All active actions in chronological order — click any task to jump to it</div></div>
+    <div id="tlview"></div>
   </div>
   <div class="view" id="view-meetings">
     <div class="ph"><div class="ph-t">By Meeting</div><div class="ph-s">All outstanding actions grouped by source - click any row to jump to the task</div></div>
@@ -698,6 +740,7 @@ function go(n){
   if(n==='tasks')    renderTasks();
   if(n==='completed')renderCompleted();
   if(n==='analytics')renderAnalytics();
+  if(n==='timeline') renderTimeline();
   if(n==='meetings') renderMeetings();
 }
 
@@ -1608,6 +1651,129 @@ function initGlobalShortcuts(){
       openSearch();
     }
   });
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   v4: Timeline view — all active actions in chronological order
+   Groups by month, shows date pill + priority + title + stream tag.
+   Click any task to jump to it in Active Tasks.
+════════════════════════════════════════════════════════════════ */
+function renderTimeline(){
+  var list=document.getElementById('tlview');
+  if(!list)return;
+  if(!A||A.length===0){
+    list.innerHTML='<div class="empty-state"><div class="empty-state-icon">&#9201;</div><div class="empty-state-msg">Nothing on the timeline yet</div><div class="empty-state-sub">Active tasks will appear here in chronological order</div></div>';
+    return;
+  }
+  /* Split into dated and undated */
+  var dated=[],undated=[];
+  for(var i=0;i<A.length;i++){
+    if(A[i].dueDate)dated.push(A[i]);
+    else undated.push(A[i]);
+  }
+  dated.sort(function(a,b){return a.dueDate.localeCompare(b.dueDate);});
+
+  var now=new Date();now.setHours(0,0,0,0);
+  var todayStr=now.toISOString().substring(0,10);
+  var todayInserted=false;
+
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+  var out='<div class="tl-wrap">';
+  var lastMonth='';
+
+  for(var j=0;j<dated.length;j++){
+    var t=dated[j];
+    var d=new Date(t.dueDate+'T00:00:00');
+    var monthKey=d.getFullYear()+'-'+d.getMonth();
+    var monthLabel=months[d.getMonth()]+' '+d.getFullYear();
+
+    /* Inject TODAY divider before the first task whose date is >= today */
+    if(!todayInserted && t.dueDate>=todayStr){
+      var todayMonthKey=now.getFullYear()+'-'+now.getMonth();
+      if(todayMonthKey!==lastMonth){
+        out+='<div class="tl-month">'+months[now.getMonth()]+' '+now.getFullYear()+'</div>';
+        lastMonth=todayMonthKey;
+      }
+      out+='<div class="tl-today"><span class="tl-today-label">TODAY &middot; '+weekdays[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()].substring(0,3)+'</span></div>';
+      todayInserted=true;
+    }
+
+    if(monthKey!==lastMonth){
+      out+='<div class="tl-month">'+monthLabel+'</div>';
+      lastMonth=monthKey;
+    }
+
+    var isOverdue=t.dueDate<todayStr;
+    var isToday=t.dueDate===todayStr;
+    var stream=inferStream(t);
+    var pc=PC[t.priority]||'var(--tx3)';
+    var dateLabel=weekdays[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()].substring(0,3);
+
+    var rowCls='tl-row';
+    if(isOverdue)rowCls+=' overdue';
+    if(isToday)rowCls+=' is-today';
+    if(t.status==='wip')rowCls+=' wip';
+
+    out+='<div class="'+rowCls+'" data-id="'+t.id+'" onclick="jumpFromTimeline(\''+t.id+'\')">';
+    out+='<div class="tl-date">'+dateLabel+'</div>';
+    out+='<div class="tl-dot" style="background:'+pc+'"></div>';
+    out+='<div class="tl-body">';
+    out+='<div class="tl-title">'+esc(t.title||'')+'</div>';
+    out+='<div class="tl-meta">';
+    out+='<span class="stream-tag stream-'+stream+'">'+stream+'</span>';
+    out+='<span class="tl-prio tl-prio-'+t.priority+'">'+(t.priority||'').toUpperCase()+'</span>';
+    if(t.status==='wip')out+='<span class="tl-wip-badge">IN PROGRESS</span>';
+    if(t.assignedBy)out+='<span class="tl-from">from '+esc(t.assignedBy)+'</span>';
+    out+='</div>';
+    out+='</div>';
+    out+='</div>';
+  }
+
+  /* If today never inserted (all tasks in past), put it at the end */
+  if(!todayInserted && dated.length>0){
+    out+='<div class="tl-today"><span class="tl-today-label">TODAY &middot; '+weekdays[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()].substring(0,3)+'</span></div>';
+  }
+
+  /* Undated tasks */
+  if(undated.length>0){
+    out+='<div class="tl-month">No date</div>';
+    for(var k=0;k<undated.length;k++){
+      var u=undated[k];
+      var ustream=inferStream(u);
+      var upc=PC[u.priority]||'var(--tx3)';
+      out+='<div class="tl-row no-date" data-id="'+u.id+'" onclick="jumpFromTimeline(\''+u.id+'\')">';
+      out+='<div class="tl-date">—</div>';
+      out+='<div class="tl-dot" style="background:'+upc+'"></div>';
+      out+='<div class="tl-body">';
+      out+='<div class="tl-title">'+esc(u.title||'')+'</div>';
+      out+='<div class="tl-meta">';
+      out+='<span class="stream-tag stream-'+ustream+'">'+ustream+'</span>';
+      out+='<span class="tl-prio tl-prio-'+u.priority+'">'+(u.priority||'').toUpperCase()+'</span>';
+      if(u.deadline)out+='<span class="tl-from">'+esc(u.deadline)+'</span>';
+      out+='</div>';
+      out+='</div>';
+      out+='</div>';
+    }
+  }
+
+  out+='</div>';
+  list.innerHTML=out;
+}
+
+function jumpFromTimeline(id){
+  go('tasks');
+  setTimeout(function(){
+    var card=document.getElementById('card-'+id);
+    if(card){
+      card.scrollIntoView({behavior:'smooth',block:'center'});
+      card.style.transition='box-shadow .3s';
+      card.style.boxShadow='0 0 0 2px var(--ac)';
+      setTimeout(function(){card.style.boxShadow='';},1500);
+    }
+  },150);
 }
 
 
