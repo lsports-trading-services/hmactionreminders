@@ -770,6 +770,22 @@ function markDirty(){
   _syncTimer=setTimeout(saveToGitHub,1500);
 }
 
+function refreshActiveView(){
+  /* Re-render whichever view is currently visible so mutations reflect everywhere */
+  var v=document.querySelector('.view.on');
+  if(!v){renderTasks();return;}
+  var id=v.id;
+  if(id==='view-tasks')renderTasks();
+  else if(id==='view-timeline')renderTimeline();
+  else if(id==='view-completed')renderCompleted();
+  else if(id==='view-analytics')renderAnalytics();
+  else if(id==='view-meetings')renderMeetings();
+  else renderTasks();
+  /* Always keep nav badges + stats fresh too */
+  if(typeof renderStats==='function')renderStats();
+  if(typeof renderFilterBar==='function' && id==='view-tasks')renderFilterBar();
+}
+
 function go(n){
   var views=document.querySelectorAll('.view');
   for(var i=0;i<views.length;i++)views[i].classList.remove('on');
@@ -1109,8 +1125,8 @@ function quickComplete(id){
   A.splice(idx,1);C.unshift(task);markDirty();
   /* Flash the card before removing */
   var card=document.getElementById('card-'+id);
-  if(card){card.style.transition='opacity .25s';card.style.opacity='0';setTimeout(function(){renderTasks();showToast('Done ✓');},250);}
-  else{renderTasks();showToast('Done ✓');}
+  if(card){card.style.transition='opacity .25s';card.style.opacity='0';setTimeout(function(){refreshActiveView();showToast('Done ✓');},250);}
+  else{refreshActiveView();showToast('Done ✓');}
 }
 function completeTask(id){
   var card=document.getElementById('card-'+id);
@@ -1493,7 +1509,7 @@ function pushBackTask(id, target){
   var pad=function(n){return n<10?'0'+n:n;};
   t.dueDate=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   t.deadline=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  markDirty();renderTasks();
+  markDirty();refreshActiveView();
   var label={tomorrow:'tomorrow','thisweek':'end of week','nextweek':'end of next week','nextmonth':'end of next month'}[target]||'later';
   showToast('Pushed to '+label);
   hideSnoozeMenu();
@@ -1917,8 +1933,8 @@ function tlComplete(id){
   /* Reuse the app's quickComplete path so it lands in Completed correctly + autosaves */
   if(typeof quickComplete==='function'){quickComplete(id);}
   else if(typeof completeTask==='function'){completeTask(id);}
-  /* quickComplete re-renders the active list + toasts; refresh the timeline too */
-  renderTimeline();
+  /* Refresh whichever view is active (timeline here) so hero counts + rows update */
+  refreshActiveView();
 }
 
 function tlPushBack(id, btn){
