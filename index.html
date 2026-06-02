@@ -587,6 +587,8 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .tl-wrap{padding:8px 0 60px;max-width:780px}
 .tl-month{font-family:"Instrument Serif",serif;font-size:25px;color:var(--tx);margin:30px 0 6px;padding-bottom:8px;border-bottom:1px solid var(--bd2)}
 .tl-month:first-child{margin-top:10px}
+.tl-now{position:relative;margin:14px 0 10px;height:1px;background:linear-gradient(90deg,var(--bd2),transparent)}
+.tl-now-label{position:absolute;top:-8px;left:0;font-size:9px;letter-spacing:1.5px;font-family:"Geist Mono",monospace;color:var(--tx3);background:var(--bg);padding:0 8px 0 2px;text-transform:uppercase}
 .tl-today{position:relative;margin:16px 0 12px;padding:5px 0;border-top:1px dashed rgba(255,69,69,.4);border-bottom:1px dashed rgba(255,69,69,.4)}
 .tl-today-label{display:inline-block;background:rgba(255,69,69,.14);color:#ff6868;font-size:10px;font-weight:600;letter-spacing:1.5px;font-family:"Geist Mono",monospace;padding:4px 10px;border-radius:4px}
 
@@ -1509,10 +1511,13 @@ function pushBackTask(id, target){
   var pad=function(n){return n<10?'0'+n:n;};
   t.dueDate=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
   t.deadline=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-  markDirty();refreshActiveView();
+  markDirty();
+  hideSnoozeMenu();
   var label={tomorrow:'tomorrow','thisweek':'end of week','nextweek':'end of next week','nextmonth':'end of next month'}[target]||'later';
   showToast('Pushed to '+label);
-  hideSnoozeMenu();
+  /* Defer re-render to next tick so the menu teardown + any pending click
+     handling completes first — otherwise the timeline rebuild can be swallowed */
+  setTimeout(refreshActiveView, 0);
 }
 /* Back-compat shims — old snooze concept now means "push back to nextweek" */
 function snoozeTask(id, days){
@@ -1832,11 +1837,17 @@ function renderTimeline(){
     var dayKey=t.dueDate;
     var bkt=tlBucketOf(t,todayStr);
 
-    /* TODAY divider before first task >= today */
+    /* "Now" marker before first task >= today.
+       Prominent red TODAY label only when there are actually tasks due today;
+       otherwise a subtle divider so it reads as a position marker, not a stuck banner. */
     if(!todayInserted && t.dueDate>=todayStr){
       var tmk=now.getFullYear()+'-'+now.getMonth();
       if(tmk!==lastMonth){out+='<div class="tl-month">'+months[now.getMonth()]+' '+now.getFullYear()+'</div>';lastMonth=tmk;lastDay='';}
-      out+='<div class="tl-today" id="tl-anchor-today"><span class="tl-today-label">TODAY &middot; '+wsh[now.getDay()]+' '+now.getDate()+' '+msh[now.getMonth()]+'</span></div>';
+      if(counts.today>0){
+        out+='<div class="tl-today has-today" id="tl-anchor-today"><span class="tl-today-label">TODAY &middot; '+wsh[now.getDay()]+' '+now.getDate()+' '+msh[now.getMonth()]+'</span></div>';
+      } else {
+        out+='<div class="tl-now" id="tl-anchor-today"><span class="tl-now-label">now</span></div>';
+      }
       todayInserted=true;
     }
 
@@ -1871,7 +1882,11 @@ function renderTimeline(){
   }
 
   if(!todayInserted){
-    out+='<div class="tl-today" id="tl-anchor-today"><span class="tl-today-label">TODAY &middot; '+wsh[now.getDay()]+' '+now.getDate()+' '+msh[now.getMonth()]+'</span></div>';
+    if(counts.today>0){
+      out+='<div class="tl-today has-today" id="tl-anchor-today"><span class="tl-today-label">TODAY &middot; '+wsh[now.getDay()]+' '+now.getDate()+' '+msh[now.getMonth()]+'</span></div>';
+    } else {
+      out+='<div class="tl-now" id="tl-anchor-today"><span class="tl-now-label">now</span></div>';
+    }
   }
 
   /* undated */
