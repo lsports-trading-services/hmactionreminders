@@ -721,7 +721,7 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
     <div id="tlview"></div>
   </div>
   <div class="view" id="view-people">
-    <div class="ph"><div class="ph-t">People</div><div class="ph-s">Open commitments by person &mdash; what they asked of you, and what you're waiting on from them</div></div>
+    <div class="ph"><div class="ph-t">People</div><div class="ph-s">Open commitments by person &mdash; what they asked of you, and where they're tagged</div></div>
     <div id="plist"></div>
   </div>
   <div class="view" id="view-meetings">
@@ -752,6 +752,7 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
         <div><div class="mfl">ESTIMATED TIME</div><input class="mfi" id="nt-time" placeholder="e.g. 1h 30m"></div>
         <div><div class="mfl">ASSIGNED BY</div><input class="mfi" id="nt-by" placeholder="e.g. Daniel"></div>
       </div>
+      <div style="margin-bottom:0"><div class="mfl">PEOPLE</div><input class="mfi" id="nt-people" placeholder="Comma-separated, e.g. Nadav, Tina"></div>
       <div><div class="mfl">REPEATS</div>
         <select class="mfs" id="nt-recur">
           <option value="none" selected>None</option>
@@ -1062,6 +1063,7 @@ function buildCard(t){
   h+='<div class="ef"><div class="el">DUE DATE</div><input class="ei ei-d" type="date" value="'+esc(t.dueDate||'')+'" onchange="saveEdits(\''+t.id+'\')"></div>';
   h+='<div class="ef"><div class="el">PRIORITY</div><select class="esel ei-p" onchange="saveEdits(\''+t.id+'\')">'+priOpts+'</select></div>';
   h+='<div class="ef"><div class="el">ASSIGNED BY</div><input class="ei ei-b" value="'+esc(t.assignedBy||'')+'" onchange="saveEdits(\''+t.id+'\')"></div>';
+  h+='<div class="ef"><div class="el">PEOPLE</div><input class="ei ei-pp" value="'+esc(t.people||'')+'" placeholder="Comma-separated, e.g. Nadav, Tina" onchange="saveEdits(\''+t.id+'\')"></div>';
   h+='<div class="ef"><div class="el">REPEATS</div><select class="esel ei-r" onchange="saveEdits(\''+t.id+'\')">'+recOpts+'</select></div>';
   h+='</div>';
   h+='<div class="epf"><span class="eph">Edit fields then save</span><button class="esb" data-action="save">Save changes</button></div>';
@@ -1146,6 +1148,7 @@ function saveEdits(id){
   if(pEl)t.priority=pEl.value;
   if(rEl)t.recur=rEl.value;
   if(bEl)t.assignedBy=bEl.value.trim();
+  var ppEl=card.querySelector('.ei-pp');if(ppEl)t.people=ppEl.value.trim();
   markDirty();
   /* Remember which card was open and refresh entire list so sort order updates */
   var wasOpen=card.classList.contains('xp');
@@ -1578,6 +1581,7 @@ function submitNewTask(){
     estimatedTime:document.getElementById('nt-time').value.trim(),
     estimatedMinutes:parseM(document.getElementById('nt-time').value),
     assignedBy:document.getElementById('nt-by').value.trim()||'Self',
+    people:(document.getElementById('nt-people')||{value:''}).value.trim(),
     dueDate:dueVal,deadline:deadline,
     recur:(document.getElementById('nt-recur')||{}).value||'none',
     meetingTitle:'Manual entry',
@@ -1941,53 +1945,28 @@ function renderPeople(){
   var list=document.getElementById('plist');if(!list)return;
   var people={};
   function P(n){if(!people[n])people[n]={asked:[],waiting:[],lastMeet:null};return people[n];}
-  var names={},i,nm;
-  var STOP={};
-  'self when the via once after none harrison claude budget poland sales product satellite phase coverage current input access more playtech digient jumbo bet triage liability monitor runbook dublin lisbon defend manual entry interview catch sync planning scope data tech strategy intro revenue marketing cash competition tiering integrity science profiling customer objectives roadmap status job descriptions staffing bogdos'.split(' ').forEach(function(w){STOP[w]=1;});
-  function addN(n){
-    if(!n)return;
-    n=n.replace(/['\u2019]s?$/,'');
-    if(n.length<3||STOP[n.toLowerCase()])return;
-    names[n.charAt(0).toUpperCase()+n.slice(1)]=1;
+  function tags(t){
+    return (t.people||'').split(',').map(function(s){return s.trim();}).filter(function(s){return s.length>1;});
   }
-  for(i=0;i<A.length;i++){addN(_pName(A[i].assignedBy));}
-  for(i=0;i<C.length;i++){addN(_pName(C[i].assignedBy));}
-  /* people named in meeting titles */
-  A.concat(C).forEach(function(t){
-    ((t.meetingTitle||'').match(/[A-Z][a-z]{2,}/g)||[]).forEach(addN);
-  });
-  /* people referenced in dependency text: possessives, (Name) / (via Name), X & Y pairs, leading bare names */
-  A.forEach(function(t){
-    var d=t.dependencies||'';
-    if(!d||/^(none|n\/?a)\s*$/i.test(d))return;
-    (d.match(/[A-Z][a-z]{2,}['\u2019]s?(?=\s|$|[;,)])/g)||[]).forEach(addN);
-    (d.match(/\((?:via\s+)?[A-Z][a-z]{2,}\)/g)||[]).forEach(function(m){addN(m.replace(/^\((?:via\s+)?/,'').replace(/\)$/,''));});
-    var pr=d.match(/\b([A-Z][a-z]{2,})\s*&\s*([A-Z][a-z]{2,})\b/);
-    if(pr){addN(pr[1]);addN(pr[2]);}
-    d.split(/[;,]/).forEach(function(ph){var m2=ph.trim().match(/^([A-Z][a-z]{2,})\b/);if(m2)addN(m2[1]);});
-  });
-  for(i=0;i<A.length;i++){
+  for(var i=0;i<A.length;i++){
     var t=A[i];
     var an=_pName(t.assignedBy);
     if(an)P(an).asked.push(t);
-    var deps=t.dependencies||'';
-    if(deps&&!/^(none|n\/?a)\s*$/i.test(deps)){
-      for(nm in names){
-        if(an===nm)continue;
-        if(new RegExp('\\b'+nm+'\\b','i').test(deps))P(nm).waiting.push(t);
-      }
-    }
+    tags(t).forEach(function(nm){
+      nm=nm.charAt(0).toUpperCase()+nm.slice(1);
+      if(nm!==an)P(nm).waiting.push(t);
+    });
   }
-  for(nm in people){
+  for(var nm2 in people){
     (function(p){
       p.asked.concat(p.waiting).forEach(function(t){
         if(t.meetingDate&&(!p.lastMeet||t.meetingDate>p.lastMeet.d))p.lastMeet={d:t.meetingDate,m:t.meetingTitle||''};
       });
-    })(people[nm]);
+    })(people[nm2]);
   }
   var keys=Object.keys(people).filter(function(k){return people[k].asked.length+people[k].waiting.length>0;});
   if(!keys.length){
-    list.innerHTML='<div class="empty-state"><div class="empty-state-icon">&#128101;</div><div class="empty-state-msg">No person-linked tasks</div><div class="empty-state-sub">Tasks with an assigner or a named dependency appear here</div></div>';
+    list.innerHTML='<div class="empty-state"><div class="empty-state-icon">&#9673;</div><div class="empty-state-msg">No people tagged yet</div><div class="empty-state-sub">Tag people on a task (PEOPLE field) or set an assigner and they appear here</div></div>';
     return;
   }
   keys.sort(function(a,b){return (people[b].asked.length+people[b].waiting.length)-(people[a].asked.length+people[a].waiting.length);});
@@ -1996,9 +1975,9 @@ function renderPeople(){
     var p=people[name];
     h+='<div class="pp-card">';
     h+='<div class="pp-head"><span class="pp-name">'+esc(name)+'</span><span class="pp-counts">'
-      +(p.asked.length?p.asked.length+' open':'')
+      +(p.asked.length?p.asked.length+' asked':'')
       +(p.asked.length&&p.waiting.length?' &middot; ':'')
-      +(p.waiting.length?p.waiting.length+' waiting':'')+'</span>'
+      +(p.waiting.length?p.waiting.length+' tagged':'')+'</span>'
       +(p.lastMeet?'<span class="pp-meet">last: '+esc(p.lastMeet.m)+' &middot; '+esc(p.lastMeet.d)+'</span>':'')
       +'</div>';
     function rows(arr){
@@ -2014,7 +1993,7 @@ function renderPeople(){
       return s;
     }
     if(p.asked.length)h+='<div class="pp-sec">THEY ASKED</div>'+rows(p.asked);
-    if(p.waiting.length)h+='<div class="pp-sec wait">YOU\'RE WAITING ON</div>'+rows(p.waiting);
+    if(p.waiting.length)h+='<div class="pp-sec wait">TAGGED</div>'+rows(p.waiting);
     h+='</div>';
   });
   list.innerHTML=h;
