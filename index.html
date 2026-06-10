@@ -651,6 +651,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .ph{margin-bottom:14px !important}
 .sg{margin-bottom:14px !important}
 .sc{padding:11px 14px !important}
+
+/* v5.1 polish */
+.cmt{flex-wrap:wrap;row-gap:4px}
+.view{padding-bottom:120px}
 </style>
 </head>
 <body>
@@ -692,7 +696,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
     <div id="tlist"></div>
   </div>
   <div class="view" id="view-completed">
-    <div class="ph"><div class="ph-t">Completed</div><div class="ph-s">Your track record with time estimation accuracy</div></div>
+    <div class="ph"><div class="ph-t">Completed</div><div class="ph-s">Your track record</div></div>
     <div id="clist"></div>
   </div>
   <div class="view" id="view-analytics">
@@ -764,7 +768,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 </div>
 <div class="ov" id="ov">
   <div class="modal">
-    <div class="mt">&#128197; Schedule in Google Calendar</div>
+    <div class="mt">&#128467;&#65039; Schedule in Google Calendar</div>
     <div class="ms">Pre-fills an event with full task details. Opens in a new tab.</div>
     <div class="mtask" id="cal-ttl"></div>
     <div class="mg">
@@ -881,9 +885,11 @@ function renderStats(){
   var wa=Date.now()-7*86400000;
   document.getElementById('s1').textContent=A.length;
   document.getElementById('s2').textContent=A.filter(function(t){return t.priority==='critical';}).length;
-  document.getElementById('s3').textContent=fmtM(A.reduce(function(s,t){return s+parseM(t.estimatedTime||'0');},0));
+  document.getElementById('s3').textContent=fmtM(A.reduce(function(s,t){return s+(t.estimatedMinutes||0);},0));
   document.getElementById('s4').textContent=C.filter(function(t){return (t.completedAt||0)>wa;}).length;
-  document.getElementById('nbadge').textContent=A.length;
+  var _t0=new Date();_t0.setHours(0,0,0,0);var _ts0=_t0.toISOString().substring(0,10);
+  var _natt=A.filter(function(t){return t.dueDate&&t.dueDate<=_ts0;}).length;
+  var _nb=document.getElementById('nbadge');_nb.textContent=_natt;_nb.style.display=_natt?'':'none';
   var cb=document.getElementById('cbadge');
   if(C.length){cb.style.display='';cb.textContent=C.length;}else{cb.style.display='none';}
   updateBadge();
@@ -1016,7 +1022,7 @@ function buildCard(t){
   var _wt=t.status==='wip'?'In progress — click to clear':'Mark as in progress';
   h+='<button class="wipbtn'+_wc+'" data-action="wip" title="'+_wt+'">⏳</button>';
   h+='<button class="qcbtn" data-action="qcomp" title="Mark complete">&#10003;</button>';
-  h+='<button class="schbtn" data-action="cal">&#128197;</button>';
+  h+='<button class="schbtn" data-action="cal">&#128467;&#65039;</button>';
   h+='<button class="snoozebtn" data-action="snooze" title="Push back">&#10145;</button>';
   h+='<div class="chv" id="chv-'+t.id+'">&#9662;</div>';
   h+='</div>';
@@ -1063,7 +1069,7 @@ function buildCard(t){
   h+='<span class="tl">Actual time:</span>';
   h+='<input class="ti ti-act" placeholder="45m">';
   h+='<a class="askbtn" href="'+claudeUrl+'" target="_blank" onclick="event.stopPropagation();if(window.innerWidth<=900||window.navigator.standalone){event.preventDefault();showClaudePrompt(\''+ t.id +'\')}">&#9656; Ask Claude</a>';
-  h+='<button class="calbtn" data-action="cal">&#128197;</button>';
+  h+='<button class="calbtn" data-action="cal">&#128467;&#65039;</button>';
   h+='<div class="sp"></div>';
   h+='<button class="cbtn" data-action="comp">&#10003; Mark Complete</button>';
   h+='</div>';
@@ -1441,11 +1447,12 @@ function saveToGitHub(){
       var decoded='';
       try{decoded=decodeURIComponent(escape(atob((meta.content||'').replace(/\n/g,''))));}catch(e){}
       return decState(decoded).then(function(remote){
-        var beforeA=A.length,beforeC=C.length;
+        var _fp=function(){return A.map(function(t){return t.id+':'+(t.updatedAt||0)+':'+(t.dueDate||'');}).join('|')+'#'+C.length;};
+        var fpb=_fp();
         var merged=mergeStates(remote,{a:A,c:C});
         A=merged.a;C=merged.c;
         ls(KA,A);ls(KC,C);
-        if(A.length!==beforeA||C.length!==beforeC){try{refreshActiveView();}catch(e){}}
+        if(_fp()!==fpb){try{refreshActiveView();}catch(e){}}
         return encState({a:A,c:C}).then(function(env){
           var content=btoa(unescape(encodeURIComponent(env)));
           return fetch(url,{method:'PUT',headers:{'Authorization':'Bearer '+GH_TOKEN,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
@@ -2253,6 +2260,13 @@ function jumpFromTimeline(id){
   if('serviceWorker' in navigator){
     window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});
   }
+  var LAST_LOAD=Date.now();
+  document.addEventListener('visibilitychange',function(){
+    if(document.visibilityState==='visible'&&Date.now()-LAST_LOAD>60000){
+      LAST_LOAD=Date.now();
+      loadFromGitHub(function(){normDeadlines();try{refreshActiveView();}catch(e){}});
+    }
+  });
   renderTasks(); /* instant paint from local cache; reconciled after fetch */
   if(!localStorage.getItem('gh_token')){
     var tok=prompt('Enter your GitHub token to enable cross-device sync (stored locally only):');
