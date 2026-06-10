@@ -655,6 +655,10 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 /* v5.1 polish */
 .cmt{flex-wrap:wrap;row-gap:4px}
 .view{padding-bottom:120px}
+
+/* v5.2: iOS date/time inputs — kill intrinsic sizing + centred value */
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:100%;min-width:0;max-width:100%;display:block;text-align:left;font:inherit;color:inherit}
+input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0}
 </style>
 </head>
 <body>
@@ -675,7 +679,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
   <div class="ns">WORKSPACE</div>
   <div class="ni on" id="ni-tasks" onclick="go('tasks')"><span class="ni-icon">&#9672;</span><span class="ni-lbl">Active Tasks</span><span class="nb" id="nbadge">&#8212;</span></div>
   <div class="ni" id="ni-timeline" onclick="go('timeline')"><span class="ni-icon">&#9776;</span><span class="ni-lbl">Timeline</span></div>
-  <div class="ni" id="ni-people" onclick="go('people')"><span class="ni-icon">&#128101;</span><span class="ni-lbl">People</span></div>
+  <div class="ni" id="ni-people" onclick="go('people')"><span class="ni-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="ni-lbl">People</span></div>
   <div class="ni" id="ni-completed" onclick="go('completed')"><span class="ni-icon">&#10003;</span><span class="ni-lbl">Completed</span><span class="nb ok" id="cbadge" style="display:none">0</span></div>
   <div class="sbf">
     <button class="newtaskbtn" onclick="openNewTask()">+ New Task</button>
@@ -1043,7 +1047,7 @@ function buildCard(t){
   }
 
   if(hasDep){
-    h+='<div class="dep-row"><span class="dep-label">BLOCKED BY</span><span class="dep-val">'+esc(t.dependencies)+'</span></div>';
+    h+='<div class="dep-row"><span class="dep-label">WAITING ON</span><span class="dep-val">'+esc(t.dependencies)+'</span></div>';
   }
 
   if(steps){
@@ -1938,8 +1942,30 @@ function renderPeople(){
   var people={};
   function P(n){if(!people[n])people[n]={asked:[],waiting:[],lastMeet:null};return people[n];}
   var names={},i,nm;
-  for(i=0;i<A.length;i++){nm=_pName(A[i].assignedBy);if(nm)names[nm]=1;}
-  for(i=0;i<C.length;i++){nm=_pName(C[i].assignedBy);if(nm)names[nm]=1;}
+  var STOP={};
+  'self when the via once after none harrison claude budget poland sales product satellite phase coverage current input access more playtech digient jumbo bet triage liability monitor runbook dublin lisbon defend manual entry interview catch sync planning scope data tech strategy intro revenue marketing cash competition tiering integrity science profiling customer objectives roadmap status job descriptions staffing bogdos'.split(' ').forEach(function(w){STOP[w]=1;});
+  function addN(n){
+    if(!n)return;
+    n=n.replace(/['\u2019]s?$/,'');
+    if(n.length<3||STOP[n.toLowerCase()])return;
+    names[n.charAt(0).toUpperCase()+n.slice(1)]=1;
+  }
+  for(i=0;i<A.length;i++){addN(_pName(A[i].assignedBy));}
+  for(i=0;i<C.length;i++){addN(_pName(C[i].assignedBy));}
+  /* people named in meeting titles */
+  A.concat(C).forEach(function(t){
+    ((t.meetingTitle||'').match(/[A-Z][a-z]{2,}/g)||[]).forEach(addN);
+  });
+  /* people referenced in dependency text: possessives, (Name) / (via Name), X & Y pairs, leading bare names */
+  A.forEach(function(t){
+    var d=t.dependencies||'';
+    if(!d||/^(none|n\/?a)\s*$/i.test(d))return;
+    (d.match(/[A-Z][a-z]{2,}['\u2019]s?(?=\s|$|[;,)])/g)||[]).forEach(addN);
+    (d.match(/\((?:via\s+)?[A-Z][a-z]{2,}\)/g)||[]).forEach(function(m){addN(m.replace(/^\((?:via\s+)?/,'').replace(/\)$/,''));});
+    var pr=d.match(/\b([A-Z][a-z]{2,})\s*&\s*([A-Z][a-z]{2,})\b/);
+    if(pr){addN(pr[1]);addN(pr[2]);}
+    d.split(/[;,]/).forEach(function(ph){var m2=ph.trim().match(/^([A-Z][a-z]{2,})\b/);if(m2)addN(m2[1]);});
+  });
   for(i=0;i<A.length;i++){
     var t=A[i];
     var an=_pName(t.assignedBy);
