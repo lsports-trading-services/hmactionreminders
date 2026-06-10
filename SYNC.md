@@ -18,3 +18,8 @@ The Pages site and repo are public; the app shell contains no task data and the 
 
 ## Rollback
 Pre-v5 snapshot: `backups/backup_2026-06-09_2242_v5_pre/` (plaintext index.html + state.json). Restoring it re-exposes data — prefer rolling forward.
+
+## Task schema addition (v5.3)
+- `people` (string, optional): comma-separated names tagged on the task. Fully user-editable (PEOPLE field in the edit panel and new-task modal).
+- The People view derives its roster ONLY from `assignedBy` (THEY ASKED) and `people` (TAGGED). No name inference from dependencies, titles, or meeting names.
+- User-typed names are authoritative; never let transcript spellings override a user's edit. Sync scripts should populate `people` for new tasks where participants are known.
