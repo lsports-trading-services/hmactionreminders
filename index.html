@@ -656,9 +656,25 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 .cmt{flex-wrap:wrap;row-gap:4px}
 .view{padding-bottom:120px}
 
-/* v5.2: iOS date/time inputs — kill intrinsic sizing + centred value */
-input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:100%;min-width:0;max-width:100%;display:block;text-align:left;font:inherit;color:inherit}
-input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0}
+/* v5.4: native date/time inputs — match Geist Mono of sibling fields (previously inherited the body sans-serif) */
+input[type="date"],input[type="time"]{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:100%;min-width:0;max-width:100%;display:block;text-align:left;font-family:"Geist Mono",monospace;font-size:11.5px;color:var(--tx)}
+input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date-and-time-value{text-align:left;margin:0;font-family:"Geist Mono",monospace}
+input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-edit{font-family:"Geist Mono",monospace;font-size:11.5px}
+/* v5.4: people tag-input */
+.ptags{display:flex;flex-wrap:wrap;align-items:center;gap:5px;background:var(--sf3);border:1px solid var(--bd);border-radius:5px;padding:5px 6px;min-height:30px;cursor:text}
+.ptags:focus-within{border-color:rgba(110,86,207,.45)}
+.ptag{display:inline-flex;align-items:center;gap:3px;background:rgba(110,86,207,.16);border:1px solid rgba(110,86,207,.35);color:var(--tx);font-family:"Geist Mono",monospace;font-size:11px;line-height:1;padding:3px 4px 3px 8px;border-radius:11px}
+.ptag-x{background:none;border:none;color:var(--tx2);font-size:13px;line-height:1;cursor:pointer;padding:0 2px}
+.ptag-x:hover{color:var(--crit)}
+.ptag-in{flex:1;min-width:90px;background:none;border:none;outline:none;color:var(--tx);font-family:"Geist Mono",monospace;font-size:11.5px;padding:2px 0}
+.ptag-in::placeholder{color:var(--tx3)}
+.ptag-menu{position:fixed;z-index:9999;background:var(--sf2);border:1px solid var(--bd2);border-radius:8px;padding:4px;box-shadow:0 12px 30px rgba(0,0,0,.45);max-height:230px;overflow-y:auto}
+.ptag-opt{padding:7px 9px;border-radius:5px;font-family:"Geist Mono",monospace;font-size:11.5px;color:var(--tx);cursor:pointer;white-space:nowrap}
+.ptag-opt:hover,.ptag-opt.hi{background:rgba(110,86,207,.18)}
+.ptag-add{color:var(--tx2);font-style:italic}
+/* v5.4: read-only people chips on cards */
+.cmt .ppl-ico{color:var(--tx3);margin-right:3px;display:inline-flex;align-items:center}
+.cmt .ppl-chip{display:inline-flex;align-items:center;font-family:"Geist Mono",monospace;font-size:8px;color:var(--tx2);background:rgba(110,86,207,.12);border:1px solid rgba(110,86,207,.28);border-radius:9px;padding:1px 6px;margin-right:4px}
 </style>
 </head>
 <body>
@@ -752,7 +768,7 @@ input[type="date"]::-webkit-date-and-time-value,input[type="time"]::-webkit-date
         <div><div class="mfl">ESTIMATED TIME</div><input class="mfi" id="nt-time" placeholder="e.g. 1h 30m"></div>
         <div><div class="mfl">ASSIGNED BY</div><input class="mfi" id="nt-by" placeholder="e.g. Daniel"></div>
       </div>
-      <div style="margin-bottom:0"><div class="mfl">PEOPLE</div><input class="mfi" id="nt-people" placeholder="Comma-separated, e.g. Nadav, Tina"></div>
+      <div style="margin-bottom:0"><div class="mfl">PEOPLE</div><div class="ptags" data-fid="new"><input type="hidden" id="nt-people" class="ptag-val"><input class="ptag-in" placeholder="Add person" autocomplete="off"></div></div>
       <div><div class="mfl">REPEATS</div>
         <select class="mfs" id="nt-recur">
           <option value="none" selected>None</option>
@@ -936,6 +952,122 @@ function renderFilterBar(){
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
+/* ════════════ People tag-input: chips + type-ahead ════════════ */
+function rosterPeople(){
+  var freq={},canon={};
+  function add(n){
+    n=(n||'').trim().replace(/['\u2019]s?$/,'');
+    if(n.length<2)return;
+    if(/^(Self|When|The|Via|Once|After|None)$/i.test(n))return;
+    var k=n.toLowerCase();
+    if(!canon[k])canon[k]=n.charAt(0).toUpperCase()+n.slice(1);
+    freq[k]=(freq[k]||0)+1;
+  }
+  function fromTask(t){
+    var m=(t.assignedBy||'').match(/^([A-Z][a-zA-Z]{2,})/);
+    if(m&&!/^(Self|When|The|Via|Once|After)$/i.test(m[1]))add(m[1]);
+    (t.people||'').split(',').forEach(add);
+  }
+  A.forEach(fromTask);C.forEach(fromTask);
+  return Object.keys(freq).sort(function(a,b){return freq[b]-freq[a];}).map(function(k){return canon[k];});
+}
+var _ptagMenu=null,_ptagActive=null,_ptagHi=-1;
+function ptagMenuEl(){
+  if(!_ptagMenu){_ptagMenu=document.createElement('div');_ptagMenu.className='ptag-menu';_ptagMenu.style.display='none';document.body.appendChild(_ptagMenu);}
+  return _ptagMenu;
+}
+function ptagVals(c){var h=c.querySelector('.ptag-val');return (h.value||'').split(',').map(function(s){return s.trim();}).filter(Boolean);}
+function ptagRender(c){
+  var vals=ptagVals(c),input=c.querySelector('.ptag-in'),chips=c.querySelectorAll('.ptag');
+  for(var i=0;i<chips.length;i++)chips[i].remove();
+  vals.forEach(function(v){
+    var el=document.createElement('span');el.className='ptag';el.setAttribute('data-val',v);
+    el.innerHTML=esc(v)+'<button type="button" class="ptag-x" aria-label="Remove">&times;</button>';
+    c.insertBefore(el,input);
+  });
+}
+function ptagPersist(c){
+  var fid=c.getAttribute('data-fid');
+  if(fid&&fid!=='new'){
+    var val=c.querySelector('.ptag-val').value;
+    for(var i=0;i<A.length;i++){if(A[i].id===fid){A[i].people=val;A[i].updatedAt=Date.now();break;}}
+    markDirty();
+    var pv=document.getElementById('view-people');
+    if(pv&&pv.classList.contains('on'))renderPeople();
+  }
+}
+function ptagCommit(c,name){
+  name=(name||'').replace(/,/g,'').trim();
+  if(name){
+    var h=c.querySelector('.ptag-val'),vals=ptagVals(c);
+    if(!vals.some(function(v){return v.toLowerCase()===name.toLowerCase();})){
+      name=name.charAt(0).toUpperCase()+name.slice(1);
+      vals.push(name);h.value=vals.join(', ');ptagRender(c);ptagPersist(c);
+    }
+  }
+  var input=c.querySelector('.ptag-in');input.value='';_ptagHi=-1;ptagShowMenu(c,input);
+}
+function ptagRemove(c,name){
+  var h=c.querySelector('.ptag-val');
+  h.value=ptagVals(c).filter(function(v){return v.toLowerCase()!==name.toLowerCase();}).join(', ');
+  ptagRender(c);ptagPersist(c);
+}
+function ptagShowMenu(c,input){
+  var menu=ptagMenuEl(),typed=(input.value||'').trim().toLowerCase(),have={};
+  ptagVals(c).forEach(function(v){have[v.toLowerCase()]=1;});
+  var roster=rosterPeople().filter(function(n){return !have[n.toLowerCase()]&&(!typed||n.toLowerCase().indexOf(typed)>=0);}).slice(0,6);
+  var h='';
+  roster.forEach(function(n,ix){h+='<div class="ptag-opt'+(ix===_ptagHi?' hi':'')+'" data-val="'+esc(n)+'">'+esc(n)+'</div>';});
+  if(typed&&!roster.some(function(n){return n.toLowerCase()===typed;})){
+    var ai=roster.length;
+    h+='<div class="ptag-opt ptag-add'+(ai===_ptagHi?' hi':'')+'" data-val="'+esc(input.value.trim())+'">Add &ldquo;'+esc(input.value.trim())+'&rdquo;</div>';
+  }
+  if(!h){menu.style.display='none';_ptagActive=c;return;}
+  menu.innerHTML=h;
+  var cr=c.getBoundingClientRect();
+  menu.style.left=cr.left+'px';menu.style.top=(cr.bottom+4)+'px';menu.style.width=cr.width+'px';menu.style.display='block';
+  _ptagActive=c;
+}
+function ptagHideMenu(){if(_ptagMenu)_ptagMenu.style.display='none';_ptagActive=null;_ptagHi=-1;}
+function ptagItems(){return _ptagMenu?Array.prototype.slice.call(_ptagMenu.querySelectorAll('.ptag-opt')):[];}
+function ptagSetHi(ix){_ptagHi=ix;ptagItems().forEach(function(el,i){el.className=el.className.replace(' hi','')+(i===ix?' hi':'');});}
+function initTagFields(scope){var cs=(scope||document).querySelectorAll('.ptags');for(var i=0;i<cs.length;i++)ptagRender(cs[i]);}
+document.addEventListener('focusin',function(e){
+  if(e.target.classList&&e.target.classList.contains('ptag-in')){_ptagHi=-1;ptagShowMenu(e.target.closest('.ptags'),e.target);}
+});
+document.addEventListener('input',function(e){
+  if(e.target.classList&&e.target.classList.contains('ptag-in')){_ptagHi=-1;ptagShowMenu(e.target.closest('.ptags'),e.target);}
+});
+document.addEventListener('keydown',function(e){
+  if(!(e.target.classList&&e.target.classList.contains('ptag-in')))return;
+  var c=e.target.closest('.ptags'),input=e.target,its=ptagItems();
+  if(e.key==='ArrowDown'){e.preventDefault();if(its.length)ptagSetHi((_ptagHi+1)%its.length);}
+  else if(e.key==='ArrowUp'){e.preventDefault();if(its.length)ptagSetHi((_ptagHi-1+its.length)%its.length);}
+  else if(e.key==='Enter'||e.key==='Tab'){
+    if(e.key==='Tab'&&!input.value.trim()&&_ptagHi<0){ptagHideMenu();return;}
+    if(input.value.trim()||_ptagHi>=0){e.preventDefault();
+      var pick=(_ptagHi>=0&&its[_ptagHi])?its[_ptagHi].getAttribute('data-val'):input.value;ptagCommit(c,pick);}
+  }
+  else if(e.key===','){e.preventDefault();ptagCommit(c,input.value);}
+  else if(e.key==='Escape'){ptagHideMenu();}
+  else if(e.key==='Backspace'&&!input.value){var v=ptagVals(c);if(v.length)ptagRemove(c,v[v.length-1]);}
+});
+document.addEventListener('click',function(e){
+  if(e.target.classList&&e.target.classList.contains('ptag-x')){
+    e.preventDefault();e.stopPropagation();
+    var chip=e.target.closest('.ptag'),c=e.target.closest('.ptags');
+    if(chip&&c)ptagRemove(c,chip.getAttribute('data-val'));return;
+  }
+  if(e.target.classList&&e.target.classList.contains('ptag-opt')){
+    e.preventDefault();
+    if(_ptagActive){ptagCommit(_ptagActive,e.target.getAttribute('data-val'));var inp=_ptagActive.querySelector('.ptag-in');if(inp)inp.focus();}
+    return;
+  }
+  if(_ptagActive&&!e.target.closest('.ptags')&&!e.target.closest('.ptag-menu'))ptagHideMenu();
+});
+window.addEventListener('scroll',function(){if(_ptagActive){var inp=_ptagActive.querySelector('.ptag-in');if(inp)ptagShowMenu(_ptagActive,inp);}},true);
+
+
 /* Build the "Open in Claude" URL with full task context */
 function buildClaudeUrl(t){
   var ctx='';
@@ -1003,6 +1135,8 @@ function buildCard(t){
   var _stream=inferStream(t);
   h+='<span class="stream-tag stream-'+_stream+'">'+_stream+'</span>';
   if(BLOCKED[t.id])h+='<span class="blocked-tag" title="Waiting on another open task">&#9939; BLOCKED</span>';
+  var _ppl=(t.people||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+  if(_ppl.length){h+='<span class="ppl-ico"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>';_ppl.forEach(function(p){h+='<span class="ppl-chip">'+esc(p)+'</span>';});}
   if(t.recur&&t.recur!=='none')h+='<span class="recur-badge">\u21BB '+recurLabel(t.recur)+'</span>';
   /* v4: snoozed indicator */
   if(isSnoozed(t)){
@@ -1063,7 +1197,7 @@ function buildCard(t){
   h+='<div class="ef"><div class="el">DUE DATE</div><input class="ei ei-d" type="date" value="'+esc(t.dueDate||'')+'" onchange="saveEdits(\''+t.id+'\')"></div>';
   h+='<div class="ef"><div class="el">PRIORITY</div><select class="esel ei-p" onchange="saveEdits(\''+t.id+'\')">'+priOpts+'</select></div>';
   h+='<div class="ef"><div class="el">ASSIGNED BY</div><input class="ei ei-b" value="'+esc(t.assignedBy||'')+'" onchange="saveEdits(\''+t.id+'\')"></div>';
-  h+='<div class="ef"><div class="el">PEOPLE</div><input class="ei ei-pp" value="'+esc(t.people||'')+'" placeholder="Comma-separated, e.g. Nadav, Tina" onchange="saveEdits(\''+t.id+'\')"></div>';
+  h+='<div class="ef"><div class="el">PEOPLE</div><div class="ptags" data-fid="'+t.id+'"><input type="hidden" class="ei-pp ptag-val" value="'+esc(t.people||'')+'"><input class="ptag-in" placeholder="Add person" autocomplete="off"></div></div>';
   h+='<div class="ef"><div class="el">REPEATS</div><select class="esel ei-r" onchange="saveEdits(\''+t.id+'\')">'+recOpts+'</select></div>';
   h+='</div>';
   h+='<div class="epf"><span class="eph">Edit fields then save</span><button class="esb" data-action="save">Save changes</button></div>';
@@ -1112,6 +1246,7 @@ function renderTasks(){
     for(var j=0;j<items.length;j++)out+=buildCard(items[j]);
   }
   list.innerHTML=out;
+  initTagFields(list);
 }
 
 function togCard(id){
@@ -1518,6 +1653,9 @@ function openNewTask(){
   document.getElementById('nt-priority').value='high';
   document.getElementById('nt-ov').classList.add('on');
   setTimeout(function(){document.getElementById('nt-title').focus();},100);
+
+  var _ntp=document.getElementById('nt-people');if(_ntp)_ntp.value='';
+  initTagFields(document.getElementById('nt-ov'));
 }
 
 function showClaudePrompt(id){
@@ -1567,7 +1705,7 @@ function showClaudePrompt(id){
   }
 }
 
-function closeNewTask(){document.getElementById('nt-ov').classList.remove('on');}
+function closeNewTask(){document.getElementById('nt-ov').classList.remove('on');ptagHideMenu();}
 function submitNewTask(){
   var title=document.getElementById('nt-title').value.trim();
   if(!title){document.getElementById('nt-title').style.borderColor='var(--crit)';return;}
