@@ -37,3 +37,24 @@ Meeting sync workflow (Claude-driven, same as tasks):
 - Past: pull AI summaries (recordings_list -> get_recording_resource; or search_zoom zoom_doc/notes -> get_file_content). Create one `m` entry per meeting with `title`, `start`, `attendees`, `summary`, `link`. Tasks already carry `meetingTitle`, so agreed actions link automatically.
 - Upcoming: requires a scheduled-meetings/calendar source (Zoom scheduled meetings or Google Calendar). Until connected, add upcoming meetings in-app (+ Add meeting) and use the discussion-points editor. Populate `attendees` so related actions surface.
 - Only the user's own meetings; dedupe by `id`.
+
+
+## Meeting sync — pull the FULL payload, every time (added 22 Jun 2026)
+
+A meeting sync must hydrate everything the Meetings tab renders, not just actions. For each meeting in the window:
+
+1. **Summary** — `get_recording_resource(meetingId=<uuid>, types="summary")` -> `overall_summary`. (This response also carries a large `smart_pic_url` thumbnail blob; ignore it.)
+2. **Agreed actions / next steps** — `get_recording_resource(meetingId=<uuid>, types="nextStep")` (lean; no thumbnail bloat). Create tasks ONLY for Harrison-owned items; skip items owned by others; dedupe by id and by title signature against `state.a`/`state.c`.
+3. **Attendees** — from the calendar event / recording topic. Comma-separated string on the meeting object (drives the prep engine's people-overlap).
+4. **Zoom link** — recording `share_url` (from `recordings_list`) or the zoom_doc link, stored as `link`.
+5. Write meetings to **meetings.json** (never state.json). Tasks go to **state.json** (`a`), prepended.
+
+Task due dates: EOW (Fri) by default; pull earlier when an item blocks someone or a dated milestone (e.g. a dependency for another person, or a launch like IKU ~1 Sep).
+
+## Recurring meetings — next instance always visible in Upcoming
+
+Recurring 1:1s/series carry `recurring:true` and `recur:"weekly"|"monthly"` plus their Google Calendar series id in `gcal`. On every sync:
+
+- If a recurring card's `start` has passed, **archive that instance** as its own past meeting (new id e.g. `mtg-reut-0622`, with the pulled summary + link), then **roll the recurring card forward** to the next future instance's date (recompute from Google Calendar via the stored `gcal` id; keep the same card id, attendees, link, gcal).
+- Net effect: the next occurrence of every recurring series is always present under Upcoming, and each past occurrence is preserved with its own summary/actions.
+- Tagged series: mtg-reut-weekly, mtg-aaron-next, mtg-gavin-weekly, mtg-itsik-weekly (weekly); mtg-release-may (monthly).
