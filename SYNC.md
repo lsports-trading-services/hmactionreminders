@@ -23,3 +23,17 @@ Pre-v5 snapshot: `backups/backup_2026-06-09_2242_v5_pre/` (plaintext index.html 
 - `people` (string, optional): comma-separated names tagged on the task. Fully user-editable (PEOPLE field in the edit panel and new-task modal).
 - The People view derives its roster ONLY from `assignedBy` (THEY ASKED) and `people` (TAGGED). No name inference from dependencies, titles, or meeting names.
 - User-typed names are authoritative; never let transcript spellings override a user's edit. Sync scripts should populate `people` for new tasks where participants are known.
+
+
+## Meetings (`m`) — calendar sync (v6.0)
+State now has a third array, `m`, alongside `a` (active) and `c` (completed). It is encrypted, merged, and persisted exactly like tasks (union by `id`, newer `updatedAt` wins). localStorage key `ar6_m`.
+
+Meeting object:
+- `id` (e.g. `mtg-aaron-0616`), `title` (match a task's `meetingTitle` to auto-link agreed actions), `start` (`YYYY-MM-DD` or `YYYY-MM-DDTHH:MM`; empty/future = Upcoming, past = Past), `attendees` (comma-separated names — drives Upcoming "related actions" by matching task `people`/`assignedBy`), `summary` (Zoom AI summary, past meetings), `link` (Zoom doc/recording URL), `discussionPoints` (`[{id,text,done}]`, user-editable in-app), `addedAt`/`updatedAt`.
+
+The view derives, never duplicates: Upcoming "related actions" = active tasks whose `people`/`assignedBy` include an attendee; Past "agreed actions" = tasks whose `meetingTitle` equals the meeting `title`.
+
+Meeting sync workflow (Claude-driven, same as tasks):
+- Past: pull AI summaries (recordings_list -> get_recording_resource; or search_zoom zoom_doc/notes -> get_file_content). Create one `m` entry per meeting with `title`, `start`, `attendees`, `summary`, `link`. Tasks already carry `meetingTitle`, so agreed actions link automatically.
+- Upcoming: requires a scheduled-meetings/calendar source (Zoom scheduled meetings or Google Calendar). Until connected, add upcoming meetings in-app (+ Add meeting) and use the discussion-points editor. Populate `attendees` so related actions surface.
+- Only the user's own meetings; dedupe by `id`.
