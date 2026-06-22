@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Action Reminders · build 6.1 · 2026-06-22 11:38 UTC -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Action Reminders</title>
@@ -712,6 +713,8 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 .dp-in::placeholder{color:var(--tx3)}
 .dp-add{background:rgba(110,86,207,.18);border:1px solid rgba(110,86,207,.4);color:var(--tx);font-family:"Geist Mono",monospace;font-size:11px;padding:0 12px;border-radius:5px;cursor:pointer}
 
+.bld{margin-top:7px;font-family:"Geist Mono",monospace;font-size:8px;letter-spacing:.08em;color:var(--tx3);opacity:.14;cursor:default;user-select:none;-webkit-user-select:none;transition:opacity .25s;white-space:nowrap}
+.bld:hover,.bld.show{opacity:.6}
 </style>
 </head>
 <body>
@@ -738,6 +741,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
   <div class="sbf">
     <button class="newtaskbtn" onclick="openNewTask()">+ New Task</button>
     <div class="sdr"><div class="sdot" id="sdot"></div><span id="slbl">All saved</span></div>
+    <div class="bld" id="bld" title="build 6.1 · 2026-06-22 11:38 UTC" onclick="_bld()">6.1</div>
   </div>
 </nav>
 <main class="mn">
@@ -867,6 +871,8 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 </div>
 <div class="toast" id="toast"></div>
 <script>var SEED={"activeTasks":[],"completedTasks":[]};
+var BUILD='6.1',BUILD_AT='2026-06-22 11:38 UTC';
+function _bld(){var e=document.getElementById('bld');if(!e)return;if(e._t)clearTimeout(e._t);e.textContent=BUILD+' \u00b7 '+BUILD_AT;e.classList.add('show');e._t=setTimeout(function(){e.textContent=BUILD;e.classList.remove('show');},3000);}
 var KA='ar6_a', KC='ar6_c', KM='ar6_m';
 
 function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
@@ -2589,6 +2595,7 @@ function jumpFromTimeline(id){
       loadFromGitHub(function(){normDeadlines();try{refreshActiveView();}catch(e){}});
     }
   });
+  try{console.log('%cAction Reminders%c  build '+BUILD+' \u00b7 '+BUILD_AT,'font:600 12px/1.5 monospace;color:#6e56cf','font:11px/1.5 monospace;color:#8b949e');}catch(e){}
   renderTasks(); /* instant paint from local cache; reconciled after fetch */
   if(!localStorage.getItem('gh_token')){
     var tok=prompt('Enter your GitHub token to enable cross-device sync (stored locally only):');
