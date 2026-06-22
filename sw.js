@@ -4,7 +4,7 @@
    - NEVER intercepts or caches api.github.com (it is authenticated, dynamic data);
      offline task data is served from the app's own localStorage, not from here.
    Bump CACHE on any shell change to force an update. */
-var CACHE = 'ar-shell-v9';
+var CACHE = 'ar-shell-v10';
 var SHELL = [
   './',
   './index.html',
