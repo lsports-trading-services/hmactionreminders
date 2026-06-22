@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Action Reminders · build 6.1 · 2026-06-22 11:38 UTC -->
+<!-- Action Reminders · build 6.2 · 2026-06-22 11:46 UTC -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Action Reminders</title>
@@ -741,7 +741,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
   <div class="sbf">
     <button class="newtaskbtn" onclick="openNewTask()">+ New Task</button>
     <div class="sdr"><div class="sdot" id="sdot"></div><span id="slbl">All saved</span></div>
-    <div class="bld" id="bld" title="build 6.1 · 2026-06-22 11:38 UTC" onclick="_bld()">6.1</div>
+    <div class="bld" id="bld" title="build 6.2 · 2026-06-22 11:46 UTC" onclick="_bld()">6.2</div>
   </div>
 </nav>
 <main class="mn">
@@ -871,7 +871,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 </div>
 <div class="toast" id="toast"></div>
 <script>var SEED={"activeTasks":[],"completedTasks":[]};
-var BUILD='6.1',BUILD_AT='2026-06-22 11:38 UTC';
+var BUILD='6.2',BUILD_AT='2026-06-22 11:46 UTC';
 function _bld(){var e=document.getElementById('bld');if(!e)return;if(e._t)clearTimeout(e._t);e.textContent=BUILD+' \u00b7 '+BUILD_AT;e.classList.add('show');e._t=setTimeout(function(){e.textContent=BUILD;e.classList.remove('show');},3000);}
 var KA='ar6_a', KC='ar6_c', KM='ar6_m';
 
@@ -1544,23 +1544,23 @@ function addDiscussionPoint(mid,text){
   var m=_findMtg(mid);if(!m)return;
   if(!m.discussionPoints)m.discussionPoints=[];
   m.discussionPoints.push({id:'dp'+Date.now().toString(36)+Math.floor(Math.random()*1000),text:text,done:false});
-  m.updatedAt=Date.now();markDirty();renderMeetings();
+  m.updatedAt=Date.now();markMeetingsDirty();renderMeetings();
   var inp=document.querySelector('.dp-in[data-mid="'+mid+'"]');if(inp)inp.focus();
 }
 function toggleDiscussionPoint(mid,dpid){
   var m=_findMtg(mid);if(!m||!m.discussionPoints)return;
   m.discussionPoints.forEach(function(dp){if(dp.id===dpid)dp.done=!dp.done;});
-  m.updatedAt=Date.now();markDirty();renderMeetings();
+  m.updatedAt=Date.now();markMeetingsDirty();renderMeetings();
 }
 function removeDiscussionPoint(mid,dpid){
   var m=_findMtg(mid);if(!m||!m.discussionPoints)return;
   m.discussionPoints=m.discussionPoints.filter(function(dp){return dp.id!==dpid;});
-  m.updatedAt=Date.now();markDirty();renderMeetings();
+  m.updatedAt=Date.now();markMeetingsDirty();renderMeetings();
 }
 function removeMeeting(mid){
   var m=_findMtg(mid);if(!m)return;
   if(!confirm('Remove "'+(m.title||'this meeting')+'" from your meetings list?'))return;
-  M=M.filter(function(x){return x.id!==mid;});markDirty();renderMeetings();
+  M=M.filter(function(x){return x.id!==mid;});markMeetingsDirty();renderMeetings();
 }
 document.addEventListener('keydown',function(e){
   if(e.target&&e.target.classList&&e.target.classList.contains('dp-in')&&e.key==='Enter'){
@@ -1587,7 +1587,7 @@ function submitNewMeeting(){
   var start=date?(time?date+'T'+time:date):'';
   M=[{id:'mtg-'+Date.now().toString(36),title:title,start:start,attendees:document.getElementById('nm-att').value.trim(),
       summary:'',discussionPoints:[],addedAt:Date.now(),updatedAt:Date.now()}].concat(M);
-  markDirty();closeNewMeeting();go('meetings');
+  markMeetingsDirty();closeNewMeeting();go('meetings');
 }
 
 
@@ -1687,6 +1687,7 @@ function showToast(msg){var t=document.getElementById('toast');t.textContent=msg
 var GH_TOKEN=localStorage.getItem('gh_token')||'';
 var GH_REPO='lsports-trading-services/hmactionreminders';
 var GH_STATE_PATH='state.json';
+var GH_MTG_PATH='meetings.json';
 var _syncTimer=null;
 
 /* ════════════════════════════════════════════════════════════════
@@ -1760,7 +1761,7 @@ function updateBadge(){
   }catch(e){}
 }
 function saveToGitHub(){
-  if(!GH_TOKEN){ls(KA,A);ls(KC,C);ls(KM,M);return;}
+  if(!GH_TOKEN){ls(KA,A);ls(KC,C);return;}
   if(SAVING){RESAVE=true;return;}
   SAVING=true;
   var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');
@@ -1776,11 +1777,11 @@ function saveToGitHub(){
       return decState(decoded).then(function(remote){
         var _fp=function(){return A.map(function(t){return t.id+':'+(t.updatedAt||0)+':'+(t.dueDate||'');}).join('|')+'#'+C.length;};
         var fpb=_fp();
-        var merged=mergeStates(remote,{a:A,c:C,m:M});
-        A=merged.a;C=merged.c;M=merged.m;
-        ls(KA,A);ls(KC,C);ls(KM,M);
+        var merged=mergeStates(remote,{a:A,c:C});
+        A=merged.a;C=merged.c;
+        ls(KA,A);ls(KC,C);
         if(_fp()!==fpb){try{refreshActiveView();}catch(e){}}
-        return encState({a:A,c:C,m:M}).then(function(env){
+        return encState({a:A,c:C}).then(function(env){
           var content=btoa(unescape(encodeURIComponent(env)));
           return fetch(url,{method:'PUT',headers:{'Authorization':'Bearer '+GH_TOKEN,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
             body:JSON.stringify({message:'state: autosave',content:content,sha:meta.sha})});
@@ -1805,6 +1806,54 @@ function saveToGitHub(){
   });
 }
 
+var _mtgTimer=null;
+function markMeetingsDirty(){clearTimeout(_mtgTimer);_mtgTimer=setTimeout(saveMeetings,1200);}
+function loadMeetings(cb){
+  if(!GH_TOKEN){cb&&cb();return;}
+  var url='https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_MTG_PATH;
+  fetch(url,{headers:{'Authorization':'Bearer '+GH_TOKEN,'Accept':'application/vnd.github+json'},cache:'no-store'})
+  .then(function(r){return (r.status===404)?null:r.json();})
+  .then(function(meta){
+    if(!meta||!meta.content){cb&&cb();return;}
+    var dec='';try{dec=decodeURIComponent(escape(atob((meta.content||'').replace(/\n/g,''))));}catch(e){}
+    return decState(dec).then(function(obj){
+      var rm=(obj&&obj.m)?obj.m:[];
+      M=mergeStates({a:[],c:[],m:rm},{a:[],c:[],m:M}).m;
+      ls(KM,M);cb&&cb();
+    });
+  }).catch(function(e){console.warn('loadMeetings failed',e);cb&&cb();});
+}
+var MSAVING=false,MRESAVE=false;
+function saveMeetings(){
+  if(!GH_TOKEN){ls(KM,M);return;}
+  if(MSAVING){MRESAVE=true;return;}
+  MSAVING=true;
+  var url='https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_MTG_PATH;
+  function attempt(retries){
+    return fetch(url,{headers:{'Authorization':'Bearer '+GH_TOKEN,'Accept':'application/vnd.github+json'},cache:'no-store'})
+    .then(function(r){return (r.status===404)?{__new:true}:r.json();})
+    .then(function(meta){
+      var dec='';
+      if(!meta.__new){try{dec=decodeURIComponent(escape(atob((meta.content||'').replace(/\n/g,''))));}catch(e){}}
+      return decState(dec).then(function(obj){
+        var remoteM=(obj&&obj.m)?obj.m:[];
+        M=mergeStates({a:[],c:[],m:remoteM},{a:[],c:[],m:M}).m;
+        ls(KM,M);
+        return encState({m:M}).then(function(env){
+          var content=btoa(unescape(encodeURIComponent(env)));
+          var body={message:'meetings: autosave',content:content};
+          if(meta.sha)body.sha=meta.sha;
+          return fetch(url,{method:'PUT',headers:{'Authorization':'Bearer '+GH_TOKEN,'Content-Type':'application/json','Accept':'application/vnd.github+json'},body:JSON.stringify(body)});
+        });
+      });
+    })
+    .then(function(r){
+      if(r&&r.status===409&&retries>0)return attempt(retries-1);
+      if(r&&!r.ok)throw new Error('PUT '+r.status);
+    });
+  }
+  attempt(2).catch(function(e){console.warn('meetings save failed',e);ls(KM,M);}).then(function(){MSAVING=false;if(MRESAVE){MRESAVE=false;saveMeetings();}});
+}
 function loadFromGitHub(cb){
   if(!GH_TOKEN){cb&&cb();return;}
   var url='https://api.github.com/repos/'+GH_REPO+'/contents/'+GH_STATE_PATH;
@@ -1818,9 +1867,9 @@ function loadFromGitHub(cb){
   })
   .then(function(remote){
     if(remote&&remote.a){
-      var merged=mergeStates(remote,{a:A,c:C,m:M});
-      A=merged.a;C=merged.c;M=merged.m;
-      ls(KA,A);ls(KC,C);ls(KM,M);
+      var merged=mergeStates(remote,{a:A,c:C});
+      A=merged.a;C=merged.c;
+      ls(KA,A);ls(KC,C);
     }
     cb&&cb();
     /* migration: if remote was legacy plaintext, immediately re-save encrypted */
@@ -2592,7 +2641,7 @@ function jumpFromTimeline(id){
   document.addEventListener('visibilitychange',function(){
     if(document.visibilityState==='visible'&&Date.now()-LAST_LOAD>60000){
       LAST_LOAD=Date.now();
-      loadFromGitHub(function(){normDeadlines();try{refreshActiveView();}catch(e){}});
+      loadFromGitHub(function(){normDeadlines();try{refreshActiveView();}catch(e){}});loadMeetings(function(){try{var v=document.querySelector('.view.on');if(v&&v.id==='view-meetings')renderMeetings();}catch(e){}});
     }
   });
   try{console.log('%cAction Reminders%c  build '+BUILD+' \u00b7 '+BUILD_AT,'font:600 12px/1.5 monospace;color:#6e56cf','font:11px/1.5 monospace;color:#8b949e');}catch(e){}
@@ -2605,6 +2654,7 @@ function jumpFromTimeline(id){
     normDeadlines();
     renderTasks();
   });
+  loadMeetings(function(){try{var v=document.querySelector('.view.on');if(v&&v.id==='view-meetings')renderMeetings();}catch(e){}});
 })();</script>
 
 <button class="newtaskbtn-fab" onclick="openNewTask()" title="New Task" style="display:none">+</button>
