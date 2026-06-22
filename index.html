@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Action Reminders · build 6.2 · 2026-06-22 11:46 UTC -->
+<!-- Action Reminders · build 6.3 · 2026-06-22 12:13 UTC -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Action Reminders</title>
@@ -715,6 +715,16 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 
 .bld{margin-top:7px;font-family:"Geist Mono",monospace;font-size:8px;letter-spacing:.08em;color:var(--tx3);opacity:.14;cursor:default;user-select:none;-webkit-user-select:none;transition:opacity .25s;white-space:nowrap}
 .bld:hover,.bld.show{opacity:.6}
+.mtg-ctx{background:rgba(110,86,207,.07);border:1px solid rgba(110,86,207,.20);border-radius:8px;}
+.mtg-last{display:flex;align-items:center;gap:8px;margin:1px 0 4px;flex-wrap:wrap;}
+.mtg-last-t{font-weight:600;font-size:12px;}
+.mtg-jump{background:none;border:none;color:#6e56cf;font-size:11px;cursor:pointer;padding:0;font-family:inherit;}
+.mtg-jump:hover{text-decoration:underline;}
+.mtg-sum-sm{font-size:11px;opacity:.82;}
+.mtg-blab2{font-size:9px;letter-spacing:.05em;opacity:.6;margin:7px 0 2px;text-transform:uppercase;}
+.mtg-since{margin-top:3px;}
+.mtg-ctxtext{white-space:pre-wrap;}
+.mtg-ctxsrc{font-size:10px;opacity:.5;margin-top:5px;font-style:italic;}
 </style>
 </head>
 <body>
@@ -741,7 +751,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
   <div class="sbf">
     <button class="newtaskbtn" onclick="openNewTask()">+ New Task</button>
     <div class="sdr"><div class="sdot" id="sdot"></div><span id="slbl">All saved</span></div>
-    <div class="bld" id="bld" title="build 6.2 · 2026-06-22 11:46 UTC" onclick="_bld()">6.2</div>
+    <div class="bld" id="bld" title="build 6.3 · 2026-06-22 12:13 UTC" onclick="_bld()">6.3</div>
   </div>
 </nav>
 <main class="mn">
@@ -871,7 +881,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 </div>
 <div class="toast" id="toast"></div>
 <script>var SEED={"activeTasks":[],"completedTasks":[]};
-var BUILD='6.2',BUILD_AT='2026-06-22 11:46 UTC';
+var BUILD='6.3',BUILD_AT='2026-06-22 12:13 UTC';
 function _bld(){var e=document.getElementById('bld');if(!e)return;if(e._t)clearTimeout(e._t);e.textContent=BUILD+' \u00b7 '+BUILD_AT;e.classList.add('show');e._t=setTimeout(function(){e.textContent=BUILD;e.classList.remove('show');},3000);}
 var KA='ar6_a', KC='ar6_c', KM='ar6_m';
 
@@ -1476,6 +1486,27 @@ function actionsForMeeting(title){
   return {active:A.filter(function(t){return (t.meetingTitle||'').toLowerCase()===tl;}),
           done:C.filter(function(t){return (t.meetingTitle||'').toLowerCase()===tl;})};
 }
+function mtgJump(id){var el=document.getElementById('mtg-'+id);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});}
+function _attLow(att){return att.map(function(s){return (s||'').toLowerCase();}).filter(function(s){return s.length>1;});}
+function _ovl(t,low){var hay=((t.people||'')+' '+(t.assignedBy||'')).toLowerCase();return low.some(function(n){return hay.indexOf(n)>=0;});}
+function lastMeetingFor(m,att){
+  var low=_attLow(att);if(!low.length)return null;
+  var ms=mtgStartMs(m)||8e15,best=null;
+  (M||[]).forEach(function(o){
+    if(o.id===m.id||!o.start)return;var os=mtgStartMs(o);if(!(os<ms))return;
+    var oa=mtgAttendees(o).map(function(s){return (s||'').toLowerCase();});
+    if(low.some(function(n){return oa.some(function(x){return x.indexOf(n)>=0||n.indexOf(x)>=0;});})&&(!best||os>mtgStartMs(best)))best=o;
+  });
+  return best;
+}
+function completedSince(att,sinceMs){
+  var low=_attLow(att);if(!low.length)return [];
+  return C.filter(function(t){return _ovl(t,low)&&(t.completedAt||0)>sinceMs;}).sort(function(a,b){return (b.completedAt||0)-(a.completedAt||0);});
+}
+function prepBefore(att,beforeMs){
+  var low=_attLow(att);if(!low.length||!beforeMs)return [];
+  return A.filter(function(t){if(!_ovl(t,low))return false;var d=t.dueDate?new Date(t.dueDate).getTime():NaN;return !isNaN(d)&&d<=beforeMs;});
+}
 function actionRow(t,isDone){
   return '<div class="mtg-act" onclick="jumpFromTimeline(\''+t.id+'\')">'
     +'<span class="mtg-act-dot" style="background:'+_pcol(t.priority)+'"></span>'
@@ -1505,10 +1536,24 @@ function renderMeetings(){
     var att=mtgAttendees(m);
     h+='<div class="mtg-card up" id="mtg-'+m.id+'">'+_mtgCardCommon(m,att);
     if(m.summary)h+='<div class="mtg-sum">'+esc(m.summary)+'</div>';
-    var rel=actionsForAttendees(att);
-    h+='<div class="mtg-block"><div class="mtg-blab">RELATED ACTIONS'+(rel.length?' ('+rel.length+')':'')+'</div>';
-    if(rel.length)rel.forEach(function(t){h+=actionRow(t,false);});
-    else h+='<div class="mtg-empty2">No open actions linked to '+(att.length?esc(att.join(', ')):'these attendees')+'.</div>';
+    var lm=lastMeetingFor(m,att);
+    if(m.context){
+      h+='<div class="mtg-block mtg-ctx"><div class="mtg-blab">CONTEXT</div><div class="mtg-sum mtg-ctxtext">'+esc(m.context)+'</div>'+(m.contextSource?'<div class="mtg-ctxsrc">'+esc(m.contextSource)+'</div>':'')+'</div>';
+    } else if(lm){
+      h+='<div class="mtg-block mtg-ctx"><div class="mtg-blab">LAST TIME \u00b7 '+esc(mtgWhen(lm))+'</div>';
+      h+='<div class="mtg-last"><span class="mtg-last-t">'+esc(lm.title||'')+'</span><button class="mtg-jump" onclick="mtgJump(\''+lm.id+'\')">view \u2193</button></div>';
+      if(lm.summary)h+='<div class="mtg-sum mtg-sum-sm">'+esc(lm.summary)+'</div>';
+      var since=completedSince(att,mtgStartMs(lm));
+      if(since.length){h+='<div class="mtg-since"><div class="mtg-blab2">Done since ('+since.length+')</div>';since.forEach(function(t){h+=actionRow(t,true);});h+='</div>';}
+      h+='</div>';
+    }
+    var open=actionsForAttendees(att),prep=prepBefore(att,mtgStartMs(m)),pid={};
+    prep.forEach(function(t){pid[t.id]=1;});
+    var openO=open.filter(function(t){return !pid[t.id];});
+    if(prep.length){h+='<div class="mtg-block"><div class="mtg-blab">\u2691 TO DO BEFORE ('+prep.length+')</div>';prep.forEach(function(t){h+=actionRow(t,false);});h+='</div>';}
+    h+='<div class="mtg-block"><div class="mtg-blab">OPEN ACTIONS'+(openO.length?' ('+openO.length+')':'')+'</div>';
+    if(openO.length)openO.forEach(function(t){h+=actionRow(t,false);});
+    else h+='<div class="mtg-empty2">'+(prep.length?'Nothing else open.':'No open actions linked to '+(att.length?esc(att.join(', ')):'these attendees')+'.')+'</div>';
     h+='</div>';
     var dps=m.discussionPoints||[];
     h+='<div class="mtg-block"><div class="mtg-blab">DISCUSSION POINTS</div>';
