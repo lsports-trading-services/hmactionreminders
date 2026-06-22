@@ -675,6 +675,43 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 /* v5.4: read-only people chips on cards */
 .cmt .ppl-ico{color:var(--tx3);margin-right:3px;display:inline-flex;align-items:center}
 .cmt .ppl-chip{display:inline-flex;align-items:center;font-family:"Geist Mono",monospace;font-size:8px;color:var(--tx2);background:rgba(110,86,207,.12);border:1px solid rgba(110,86,207,.28);border-radius:9px;padding:1px 6px;margin-right:4px}
+/* v6.0: Meetings / calendar */
+.addmtg{background:rgba(110,86,207,.16);border:1px solid rgba(110,86,207,.4);color:var(--tx);font-family:"Geist Mono",monospace;font-size:11.5px;padding:7px 12px;border-radius:6px;cursor:pointer}
+.addmtg:hover{background:rgba(110,86,207,.26)}
+.mtg-sec{font-family:"Geist Mono",monospace;font-size:10px;letter-spacing:.12em;color:var(--tx3);margin:18px 0 8px;text-transform:uppercase}
+.mtg-none{color:var(--tx3);font-size:12px;padding:4px 2px 8px}
+.mtg-card{background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:14px 15px;margin-bottom:10px}
+.mtg-card.up{border-left:3px solid rgba(110,86,207,.7)}
+.mtg-h{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.mtg-title{font-family:"Instrument Serif",Georgia,serif;font-size:18px;color:var(--tx);line-height:1.2}
+.mtg-del{background:none;border:none;color:var(--tx3);font-size:16px;line-height:1;cursor:pointer;padding:0 2px}
+.mtg-del:hover{color:var(--crit)}
+.mtg-when{font-family:"Geist Mono",monospace;font-size:11px;color:var(--tx2);margin-top:3px}
+.mtg-att{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.mtg-sum{font-size:12.5px;line-height:1.55;color:var(--tx2);margin-top:4px;white-space:pre-wrap}
+.mtg-link{display:inline-block;margin-top:6px;font-family:"Geist Mono",monospace;font-size:11px;color:rgba(150,130,240,.95);text-decoration:none}
+.mtg-link:hover{text-decoration:underline}
+.mtg-block{margin-top:12px}
+.mtg-blab{font-family:"Geist Mono",monospace;font-size:9.5px;letter-spacing:.1em;color:var(--tx3);margin-bottom:6px}
+.mtg-empty2{color:var(--tx3);font-size:11.5px;font-style:italic}
+.mtg-act{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;cursor:pointer;background:var(--sf3);margin-bottom:4px}
+.mtg-act:hover{background:rgba(110,86,207,.12)}
+.mtg-act-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.mtg-act-t{font-size:12px;color:var(--tx);flex:1}
+.mtg-act-t.done{text-decoration:line-through;color:var(--tx3)}
+.mtg-act-d{font-family:"Geist Mono",monospace;font-size:10px;color:var(--tx2)}
+.dp-row{display:flex;align-items:center;gap:8px;padding:4px 0}
+.dp-ck{accent-color:#6e56cf;width:14px;height:14px;flex:none;cursor:pointer}
+.dp-t{font-size:12.5px;color:var(--tx);flex:1}
+.dp-t.done{text-decoration:line-through;color:var(--tx3)}
+.dp-x{background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer;padding:0 2px}
+.dp-x:hover{color:var(--crit)}
+.dp-add-row{display:flex;gap:6px;margin-top:6px}
+.dp-in{flex:1;background:var(--sf3);border:1px solid var(--bd);border-radius:5px;color:var(--tx);font-family:"Geist Mono",monospace;font-size:11.5px;padding:6px 8px;outline:none}
+.dp-in:focus{border-color:rgba(110,86,207,.45)}
+.dp-in::placeholder{color:var(--tx3)}
+.dp-add{background:rgba(110,86,207,.18);border:1px solid rgba(110,86,207,.4);color:var(--tx);font-family:"Geist Mono",monospace;font-size:11px;padding:0 12px;border-radius:5px;cursor:pointer}
+
 </style>
 </head>
 <body>
@@ -695,6 +732,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
   <div class="ns">WORKSPACE</div>
   <div class="ni on" id="ni-tasks" onclick="go('tasks')"><span class="ni-icon">&#9672;</span><span class="ni-lbl">Active Tasks</span><span class="nb" id="nbadge">&#8212;</span></div>
   <div class="ni" id="ni-timeline" onclick="go('timeline')"><span class="ni-icon">&#9776;</span><span class="ni-lbl">Timeline</span></div>
+  <div class="ni" id="ni-meetings" onclick="go('meetings')"><span class="ni-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span><span class="ni-lbl">Meetings</span></div>
   <div class="ni" id="ni-people" onclick="go('people')"><span class="ni-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span class="ni-lbl">People</span></div>
   <div class="ni" id="ni-completed" onclick="go('completed')"><span class="ni-icon">&#10003;</span><span class="ni-lbl">Completed</span><span class="nb ok" id="cbadge" style="display:none">0</span></div>
   <div class="sbf">
@@ -741,12 +779,31 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
     <div id="plist"></div>
   </div>
   <div class="view" id="view-meetings">
-    <div class="ph"><div class="ph-t">By Meeting</div><div class="ph-s">All outstanding actions grouped by source - click any row to jump to the task</div></div>
+    <div class="ph"><div class="ph-t">Meetings</div><div class="ph-s">Your Zoom meetings &mdash; upcoming with prep notes, past with summaries and agreed actions</div></div>
+    <div style="margin-bottom:14px"><button class="addmtg" onclick="openNewMeeting()">+ Add meeting</button></div>
     <div id="mlist"></div>
   </div>
 </main>
 </div>
 
+<div class="ov" id="nm-ov">
+  <div class="modal" style="width:460px">
+    <div class="mt">+ Add meeting</div>
+    <div class="ms">Track an upcoming or past meeting</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+      <div><div class="mfl">TITLE</div><input class="mfi" id="nm-title" placeholder="e.g. Harrison &lt;&gt; Aaron" style="font-size:13px"></div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><div class="mfl">DATE</div><input class="mfi" id="nm-date" type="date"></div>
+        <div style="flex:1"><div class="mfl">TIME (optional)</div><input class="mfi" id="nm-time" type="time"></div>
+      </div>
+      <div><div class="mfl">ATTENDEES</div><input class="mfi" id="nm-att" placeholder="Comma-separated, e.g. Aaron, Reut"></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button onclick="closeNewMeeting()" style="background:none;border:1px solid var(--bd);color:var(--tx2);font-family:'Geist Mono',monospace;font-size:11.5px;padding:7px 14px;border-radius:6px;cursor:pointer">Cancel</button>
+      <button class="addmtg" onclick="submitNewMeeting()">Add meeting</button>
+    </div>
+  </div>
+</div>
 <div class="ov" id="nt-ov">
   <div class="modal" style="width:480px">
     <div class="mt">+ New Task</div>
@@ -810,7 +867,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 </div>
 <div class="toast" id="toast"></div>
 <script>var SEED={"activeTasks":[],"completedTasks":[]};
-var KA='ar6_a', KC='ar6_c';
+var KA='ar6_a', KC='ar6_c', KM='ar6_m';
 
 function lg(k){try{var v=localStorage.getItem(k);return v?JSON.parse(v):null}catch(e){return null}}
 function ls(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
@@ -825,6 +882,7 @@ var A=(function(){
   var done={};for(var i=0;i<C.length;i++)done[C[i].id]=true;
   return base.filter(function(t){return !done[t.id];});
 })();
+var M=lg(KM)||[];
 
 var _saveTimer=null;
 function markDirty(){
@@ -1382,25 +1440,150 @@ function renderCompleted(){
   list.innerHTML=html;
 }
 
-function renderMeetings(){
-  var bm={};
-  for(var i=0;i<A.length;i++){var t=A[i],k=t.meetingTitle||'Unknown';if(!bm[k])bm[k]={n:k,d:t.meetingDate,tasks:[],m:0};bm[k].tasks.push(t);bm[k].m+=parseM(t.estimatedTime||'0');}
-  var ms=[];for(var k in bm)ms.push(bm[k]);ms.sort(function(a,b){return new Date(b.d||0)-new Date(a.d||0);});
-  var list=document.getElementById('mlist');
-  if(!ms.length){list.innerHTML='<div class="empty"><span class="empty-i">&#127897;</span>No meetings.</div>';return;}
-  var html='';
-  for(var mi=0;mi<ms.length;mi++){
-    var mn=ms[mi],cr=0,hi=0,mx=1;
-    for(var i=0;i<mn.tasks.length;i++){if(mn.tasks[i].priority==='critical')cr++;if(mn.tasks[i].priority==='high')hi++;var mm=parseM(mn.tasks[i].estimatedTime||'0');if(mm>mx)mx=mm;}
-    var dt=mn.d?new Date(mn.d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'';
-    html+='<div class="mc2"><div class="mc2h"><div><div class="mc2n">'+esc(mn.n)+'</div><div class="mc2m">'+dt+' &middot; '+mn.tasks.length+' action'+(mn.tasks.length!==1?'s':'')+' &middot; '+fmtM(mn.m)+' est.</div></div><div class="mc2p">'+(cr?'<span class="pill critical">'+cr+' CRIT</span>':'')+(hi?'<span class="pill high">'+hi+' HIGH</span>':'')+'</div></div>';
-    for(var i=0;i<mn.tasks.length;i++){var t=mn.tasks[i],w=Math.round(parseM(t.estimatedTime||'0')/mx*100);html+='<div class="mr" data-jmp="'+t.id+'"><div class="mrd" style="background:'+PC[t.priority]+'"></div><div class="mrt">'+esc(t.title)+'</div><div class="mrtime">'+esc(t.estimatedTime||'—')+'</div><div class="mrb"><div class="mrf" style="width:'+w+'%"></div></div></div>';}
-    html+='</div>';
-  }
-  list.innerHTML=html;
-  var rows=list.querySelectorAll('[data-jmp]');
-  for(var i=0;i<rows.length;i++){rows[i].addEventListener('click',(function(row){return function(){jumpToTask(row.getAttribute('data-jmp'));};})(rows[i]));}
+function _pcol(p){return p==='critical'?'#e5484d':p==='high'?'#f5a623':p==='medium'?'#6e56cf':'#8b949e';}
+function mtgStartMs(m){if(!m||!m.start)return 0;var t=new Date(m.start).getTime();return isNaN(t)?0:t;}
+function mtgWhen(m){
+  if(!m.start)return 'No date set';
+  var d=new Date(m.start);if(isNaN(d.getTime()))return esc(m.start);
+  var hasTime=/T\d\d:\d\d/.test(m.start);
+  var s=d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+  if(hasTime)s+=', '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  var a=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  var n=new Date();n=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  var days=Math.round((a-n)/86400000),rel='';
+  if(days===0)rel='Today';else if(days===1)rel='Tomorrow';else if(days>1&&days<=14)rel='in '+days+' days';
+  else if(days===-1)rel='Yesterday';else if(days<-1&&days>=-21)rel=(-days)+' days ago';
+  return s+(rel?' \u00b7 '+rel:'');
 }
+function mtgAttendees(m){return (m.attendees||'').split(',').map(function(s){return s.trim();}).filter(function(s){return s.length>0;});}
+function actionsForAttendees(names){
+  if(!names.length)return [];
+  var low=names.map(function(n){return n.toLowerCase();});
+  return A.filter(function(t){
+    var hay=((t.people||'')+' '+(t.assignedBy||'')).toLowerCase();
+    return low.some(function(n){return hay.indexOf(n)>=0;});
+  });
+}
+function actionsForMeeting(title){
+  if(!title)return {active:[],done:[]};
+  var tl=title.toLowerCase();
+  return {active:A.filter(function(t){return (t.meetingTitle||'').toLowerCase()===tl;}),
+          done:C.filter(function(t){return (t.meetingTitle||'').toLowerCase()===tl;})};
+}
+function actionRow(t,isDone){
+  return '<div class="mtg-act" onclick="jumpFromTimeline(\''+t.id+'\')">'
+    +'<span class="mtg-act-dot" style="background:'+_pcol(t.priority)+'"></span>'
+    +'<span class="mtg-act-t'+(isDone?' done':'')+'">'+esc(t.title||'')+'</span>'
+    +(t.deadline?'<span class="mtg-act-d">'+esc(t.deadline)+'</span>':'')+'</div>';
+}
+function _mtgCardCommon(m,att){
+  var h='<div class="mtg-h"><div class="mtg-title">'+esc(m.title||'Untitled meeting')+'</div>'
+    +'<button class="mtg-del" title="Remove" onclick="removeMeeting(\''+m.id+'\')">&times;</button></div>';
+  h+='<div class="mtg-when">'+esc(mtgWhen(m))+'</div>';
+  if(att.length){h+='<div class="mtg-att">';att.forEach(function(p){h+='<span class="ppl-chip">'+esc(p)+'</span>';});h+='</div>';}
+  return h;
+}
+function renderMeetings(){
+  var list=document.getElementById('mlist');if(!list)return;
+  var now=Date.now(),up=[],past=[];
+  (M||[]).forEach(function(m){var isUp=(!m.start)||mtgStartMs(m)>=now;(isUp?up:past).push(m);});
+  up.sort(function(a,b){return (a.start?mtgStartMs(a):8e15)-(b.start?mtgStartMs(b):8e15);});
+  past.sort(function(a,b){return mtgStartMs(b)-mtgStartMs(a);});
+  if(!(M||[]).length){
+    list.innerHTML='<div class="empty"><span class="empty-i">&#128197;</span>No meetings yet. Add one above, or ask Claude to sync your Zoom meetings.</div>';return;
+  }
+  var h='';
+  h+='<div class="mtg-sec">UPCOMING</div>';
+  if(!up.length)h+='<div class="mtg-none">Nothing upcoming. Add a meeting to prep for it.</div>';
+  up.forEach(function(m){
+    var att=mtgAttendees(m);
+    h+='<div class="mtg-card up" id="mtg-'+m.id+'">'+_mtgCardCommon(m,att);
+    if(m.summary)h+='<div class="mtg-sum">'+esc(m.summary)+'</div>';
+    var rel=actionsForAttendees(att);
+    h+='<div class="mtg-block"><div class="mtg-blab">RELATED ACTIONS'+(rel.length?' ('+rel.length+')':'')+'</div>';
+    if(rel.length)rel.forEach(function(t){h+=actionRow(t,false);});
+    else h+='<div class="mtg-empty2">No open actions linked to '+(att.length?esc(att.join(', ')):'these attendees')+'.</div>';
+    h+='</div>';
+    var dps=m.discussionPoints||[];
+    h+='<div class="mtg-block"><div class="mtg-blab">DISCUSSION POINTS</div>';
+    dps.forEach(function(dp){
+      h+='<div class="dp-row"><input type="checkbox" class="dp-ck" data-mid="'+m.id+'" data-dp="'+dp.id+'"'+(dp.done?' checked':'')+'>'
+        +'<span class="dp-t'+(dp.done?' done':'')+'">'+esc(dp.text)+'</span>'
+        +'<button class="dp-x" data-mid="'+m.id+'" data-dp="'+dp.id+'" title="Remove">&times;</button></div>';
+    });
+    h+='<div class="dp-add-row"><input class="dp-in" data-mid="'+m.id+'" placeholder="Add a discussion point" autocomplete="off">'
+      +'<button class="dp-add" data-mid="'+m.id+'">Add</button></div></div></div>';
+  });
+  h+='<div class="mtg-sec">PAST</div>';
+  if(!past.length)h+='<div class="mtg-none">No past meetings synced yet.</div>';
+  past.forEach(function(m){
+    var att=mtgAttendees(m);
+    h+='<div class="mtg-card" id="mtg-'+m.id+'">'+_mtgCardCommon(m,att);
+    h+='<div class="mtg-block"><div class="mtg-blab">SUMMARY</div>';
+    if(m.summary){h+='<div class="mtg-sum">'+esc(m.summary)+'</div>';
+      if(m.link)h+='<a class="mtg-link" href="'+esc(m.link)+'" target="_blank" rel="noopener">Open in Zoom &rarr;</a>';}
+    else h+='<div class="mtg-empty2">No summary synced. Ask Claude to pull it from Zoom.</div>';
+    h+='</div>';
+    var ag=actionsForMeeting(m.title),tot=ag.active.length+ag.done.length;
+    h+='<div class="mtg-block"><div class="mtg-blab">AGREED ACTIONS'+(tot?' ('+tot+')':'')+'</div>';
+    if(tot){ag.active.forEach(function(t){h+=actionRow(t,false);});ag.done.forEach(function(t){h+=actionRow(t,true);});}
+    else h+='<div class="mtg-empty2">No actions linked to this meeting.</div>';
+    h+='</div></div>';
+  });
+  list.innerHTML=h;
+}
+function _findMtg(mid){for(var i=0;i<M.length;i++)if(M[i].id===mid)return M[i];return null;}
+function addDiscussionPoint(mid,text){
+  text=(text||'').trim();if(!text)return;
+  var m=_findMtg(mid);if(!m)return;
+  if(!m.discussionPoints)m.discussionPoints=[];
+  m.discussionPoints.push({id:'dp'+Date.now().toString(36)+Math.floor(Math.random()*1000),text:text,done:false});
+  m.updatedAt=Date.now();markDirty();renderMeetings();
+  var inp=document.querySelector('.dp-in[data-mid="'+mid+'"]');if(inp)inp.focus();
+}
+function toggleDiscussionPoint(mid,dpid){
+  var m=_findMtg(mid);if(!m||!m.discussionPoints)return;
+  m.discussionPoints.forEach(function(dp){if(dp.id===dpid)dp.done=!dp.done;});
+  m.updatedAt=Date.now();markDirty();renderMeetings();
+}
+function removeDiscussionPoint(mid,dpid){
+  var m=_findMtg(mid);if(!m||!m.discussionPoints)return;
+  m.discussionPoints=m.discussionPoints.filter(function(dp){return dp.id!==dpid;});
+  m.updatedAt=Date.now();markDirty();renderMeetings();
+}
+function removeMeeting(mid){
+  var m=_findMtg(mid);if(!m)return;
+  if(!confirm('Remove "'+(m.title||'this meeting')+'" from your meetings list?'))return;
+  M=M.filter(function(x){return x.id!==mid;});markDirty();renderMeetings();
+}
+document.addEventListener('keydown',function(e){
+  if(e.target&&e.target.classList&&e.target.classList.contains('dp-in')&&e.key==='Enter'){
+    e.preventDefault();addDiscussionPoint(e.target.getAttribute('data-mid'),e.target.value);}
+});
+document.addEventListener('click',function(e){
+  var el=e.target;if(!el||!el.classList)return;
+  if(el.classList.contains('dp-add')){var inp=document.querySelector('.dp-in[data-mid="'+el.getAttribute('data-mid')+'"]');if(inp)addDiscussionPoint(el.getAttribute('data-mid'),inp.value);}
+  else if(el.classList.contains('dp-x'))removeDiscussionPoint(el.getAttribute('data-mid'),el.getAttribute('data-dp'));
+});
+document.addEventListener('change',function(e){
+  var el=e.target;if(el&&el.classList&&el.classList.contains('dp-ck'))toggleDiscussionPoint(el.getAttribute('data-mid'),el.getAttribute('data-dp'));
+});
+function openNewMeeting(){
+  document.getElementById('nm-title').value='';document.getElementById('nm-date').value='';
+  document.getElementById('nm-time').value='';document.getElementById('nm-att').value='';
+  document.getElementById('nm-ov').classList.add('on');
+}
+function closeNewMeeting(){document.getElementById('nm-ov').classList.remove('on');}
+function submitNewMeeting(){
+  var title=document.getElementById('nm-title').value.trim();
+  if(!title){document.getElementById('nm-title').focus();return;}
+  var date=document.getElementById('nm-date').value,time=document.getElementById('nm-time').value;
+  var start=date?(time?date+'T'+time:date):'';
+  M=[{id:'mtg-'+Date.now().toString(36),title:title,start:start,attendees:document.getElementById('nm-att').value.trim(),
+      summary:'',discussionPoints:[],addedAt:Date.now(),updatedAt:Date.now()}].concat(M);
+  markDirty();closeNewMeeting();go('meetings');
+}
+
 
 function jumpToTask(id){
   go('tasks');
@@ -1538,33 +1721,30 @@ function decState(text){
   .catch(function(e){console.error('decrypt failed',e);return null;});
 }
 function mergeStates(remote, local){
-  if(!remote||!remote.a)remote={a:[],c:[]};
+  if(!remote)remote={};
+  if(!remote.a)remote.a=[];if(!remote.c)remote.c=[];if(!remote.m)remote.m=[];
   function byId(arr){var m={};(arr||[]).forEach(function(t){if(t&&t.id)m[t.id]=t;});return m;}
   var ra=byId(remote.a),rc=byId(remote.c),la=byId(local.a),lc=byId(local.c),id;
-  /* completed: union; on conflict keep newer completion record */
   var c={};
   for(id in rc)c[id]=rc[id];
   for(id in lc)c[id]=(c[id]&&(c[id].completedAt||0)>(lc[id].completedAt||0))?c[id]:lc[id];
-  /* active: union; on conflict prefer the side touched more recently */
   var ids={},a={};
   for(id in ra)ids[id]=1;for(id in la)ids[id]=1;
   for(id in ids){
     var lt=la[id],rt=ra[id];
     var cand=(lt&&rt)?(((lt.updatedAt||0)>=(rt.updatedAt||0))?lt:rt):(lt||rt);
     if(c[id]){
-      /* same id active on one side, completed on the other: newer event wins */
       var actAt=Math.max(cand.updatedAt||0,cand.uncompletedAt||0);
       if(actAt>(c[id].completedAt||0)){delete c[id];a[id]=cand;}
     } else a[id]=cand;
   }
-  var order=[];(local.a||[]).forEach(function(t){if(a[t.id]){order.push(a[t.id]);delete a[t.id];}});
-  (remote.a||[]).forEach(function(t){if(a[t.id]){order.push(a[t.id]);delete a[t.id];}});
-  for(id in a)order.push(a[id]);
-  var corder=[];(local.c||[]).forEach(function(t){if(c[t.id]){corder.push(c[t.id]);delete c[t.id];}});
-  (remote.c||[]).forEach(function(t){if(c[t.id]){corder.push(c[t.id]);delete c[t.id];}});
-  for(id in c)corder.push(c[id]);
-  return {a:order,c:corder};
+  function order(prim,sec,pool){var o=[],seen={};(prim||[]).concat(sec||[]).forEach(function(t){if(t&&t.id&&pool[t.id]&&!seen[t.id]){o.push(pool[t.id]);seen[t.id]=1;}});for(var k in pool)if(!seen[k])o.push(pool[k]);return o;}
+  var rm=byId(remote.m),lm=byId(local.m||[]),mm={};
+  for(id in rm)mm[id]=rm[id];
+  for(id in lm)mm[id]=(mm[id]&&(mm[id].updatedAt||0)>(lm[id].updatedAt||0))?mm[id]:lm[id];
+  return {a:order(local.a,remote.a,a),c:order(local.c,remote.c,c),m:order(local.m,remote.m,mm)};
 }
+
 function updateBadge(){
   try{
     if(!('setAppBadge' in navigator))return;
@@ -1574,7 +1754,7 @@ function updateBadge(){
   }catch(e){}
 }
 function saveToGitHub(){
-  if(!GH_TOKEN){ls(KA,A);ls(KC,C);return;}
+  if(!GH_TOKEN){ls(KA,A);ls(KC,C);ls(KM,M);return;}
   if(SAVING){RESAVE=true;return;}
   SAVING=true;
   var dot=document.getElementById('sdot'),lbl=document.getElementById('slbl');
@@ -1590,11 +1770,11 @@ function saveToGitHub(){
       return decState(decoded).then(function(remote){
         var _fp=function(){return A.map(function(t){return t.id+':'+(t.updatedAt||0)+':'+(t.dueDate||'');}).join('|')+'#'+C.length;};
         var fpb=_fp();
-        var merged=mergeStates(remote,{a:A,c:C});
-        A=merged.a;C=merged.c;
-        ls(KA,A);ls(KC,C);
+        var merged=mergeStates(remote,{a:A,c:C,m:M});
+        A=merged.a;C=merged.c;M=merged.m;
+        ls(KA,A);ls(KC,C);ls(KM,M);
         if(_fp()!==fpb){try{refreshActiveView();}catch(e){}}
-        return encState({a:A,c:C}).then(function(env){
+        return encState({a:A,c:C,m:M}).then(function(env){
           var content=btoa(unescape(encodeURIComponent(env)));
           return fetch(url,{method:'PUT',headers:{'Authorization':'Bearer '+GH_TOKEN,'Content-Type':'application/json','Accept':'application/vnd.github+json'},
             body:JSON.stringify({message:'state: autosave',content:content,sha:meta.sha})});
@@ -1632,9 +1812,9 @@ function loadFromGitHub(cb){
   })
   .then(function(remote){
     if(remote&&remote.a){
-      var merged=mergeStates(remote,{a:A,c:C});
-      A=merged.a;C=merged.c;
-      ls(KA,A);ls(KC,C);
+      var merged=mergeStates(remote,{a:A,c:C,m:M});
+      A=merged.a;C=merged.c;M=merged.m;
+      ls(KA,A);ls(KC,C);ls(KM,M);
     }
     cb&&cb();
     /* migration: if remote was legacy plaintext, immediately re-save encrypted */
