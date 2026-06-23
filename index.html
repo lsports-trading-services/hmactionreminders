@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Action Reminders · build 6.3 · 2026-06-22 12:13 UTC -->
+<!-- Action Reminders · build 6.4 · 2026-06-23 12:47 UTC -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Action Reminders</title>
@@ -751,7 +751,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
   <div class="sbf">
     <button class="newtaskbtn" onclick="openNewTask()">+ New Task</button>
     <div class="sdr"><div class="sdot" id="sdot"></div><span id="slbl">All saved</span></div>
-    <div class="bld" id="bld" title="build 6.3 · 2026-06-22 12:13 UTC" onclick="_bld()">6.3</div>
+    <div class="bld" id="bld" title="build 6.4 · 2026-06-23 12:47 UTC" onclick="_bld()">6.4</div>
   </div>
 </nav>
 <main class="mn">
@@ -881,7 +881,7 @@ input[type="date"]::-webkit-datetime-edit,input[type="time"]::-webkit-datetime-e
 </div>
 <div class="toast" id="toast"></div>
 <script>var SEED={"activeTasks":[],"completedTasks":[]};
-var BUILD='6.3',BUILD_AT='2026-06-22 12:13 UTC';
+var BUILD='6.4',BUILD_AT='2026-06-23 12:47 UTC';
 function _bld(){var e=document.getElementById('bld');if(!e)return;if(e._t)clearTimeout(e._t);e.textContent=BUILD+' \u00b7 '+BUILD_AT;e.classList.add('show');e._t=setTimeout(function(){e.textContent=BUILD;e.classList.remove('show');},3000);}
 var KA='ar6_a', KC='ar6_c', KM='ar6_m';
 
@@ -1458,6 +1458,23 @@ function renderCompleted(){
 
 function _pcol(p){return p==='critical'?'#e5484d':p==='high'?'#f5a623':p==='medium'?'#6e56cf':'#8b949e';}
 function mtgStartMs(m){if(!m||!m.start)return 0;var t=new Date(m.start).getTime();return isNaN(t)?0:t;}
+function mtgEndMs(m){
+  if(!m||!m.start)return 0;
+  if(m.end){var e=new Date(m.end).getTime();if(!isNaN(e))return e;}
+  var s=mtgStartMs(m);if(!s)return 0;
+  if(!/T\d\d:\d\d/.test(m.start)){var d=new Date(s);d.setHours(23,59,59,999);return d.getTime();}
+  var dur=(typeof m.durationMin==='number'&&m.durationMin>0)?m.durationMin:90;
+  return s+dur*60000;
+}
+function isMtgPast(m,now){
+  if(!m||!m.start)return false;            /* undated -> always upcoming */
+  now=now||Date.now();
+  var endMs=mtgEndMs(m);
+  if(now<=endMs)return false;              /* not over yet (incl. in-progress) -> stays upcoming */
+  var enriched=!!(m.summary&&(''+m.summary).trim());
+  if(enriched)return true;                 /* over AND has post-meeting summary/actions -> past */
+  return now>endMs+3*86400000;             /* over but not yet synced: keep visible up to 3 days, then retire */
+}
 function mtgWhen(m){
   if(!m.start)return 'No date set';
   var d=new Date(m.start);if(isNaN(d.getTime()))return esc(m.start);
@@ -1523,7 +1540,7 @@ function _mtgCardCommon(m,att){
 function renderMeetings(){
   var list=document.getElementById('mlist');if(!list)return;
   var now=Date.now(),up=[],past=[];
-  (M||[]).forEach(function(m){var isUp=(!m.start)||mtgStartMs(m)>=now;(isUp?up:past).push(m);});
+  (M||[]).forEach(function(m){(isMtgPast(m,now)?past:up).push(m);});
   up.sort(function(a,b){return (a.start?mtgStartMs(a):8e15)-(b.start?mtgStartMs(b):8e15);});
   past.sort(function(a,b){return mtgStartMs(b)-mtgStartMs(a);});
   if(!(M||[]).length){
